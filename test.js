@@ -1,3 +1,4 @@
+
   $(document).ready(function() {
-    $("#Post").markItUp(myBbcodeSettings); // Use BBCode settings or another set
+    $("#Post").markItUp(markItUpSettings); // Use the default settings from set.min.js
   });
