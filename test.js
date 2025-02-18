@@ -1,5 +1,13 @@
+$(document).ready(function() {
+    if (typeof markItUpSettings !== "undefined") {
+      $("#Post").markItUp(markItUpSettings);
+    } else {
+      console.error("markItUpSettings is not defined!");
+    }
+  });
+
 var markItUpSettings = {
-    nameSpace: "default",
+nameSpace: "default",
     onShiftEnter: {keepDefault:false, replaceWith:'\n\n'},
     markupSet: [
       {name:'Bold', key:'B', openWith:'[b]', closeWith:'[/b]'},
