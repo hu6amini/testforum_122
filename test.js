@@ -6,4 +6,4 @@ $(document).ready(function() {
         toolbar: "bold,italic,underline|left,center,right|quote,code|image,link,unlink|source",
         resizeEnabled: true,
     });
-        });
+   
