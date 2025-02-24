@@ -7,7 +7,7 @@ $(document).ready(function () {
         style: "https://cdnjs.cloudflare.com/ajax/libs/sceditor/3.2.0/themes/content/default.min.css",
         toolbar: "bold,italic,underline,strikethrough|subscript,superscript|left,center,right,justify|" +
          "font,size,color,emoticon,removeformat|cut,copy,paste|bulletlist,orderedlist,table|" +
-         "code,quote,horizontalrule|image,quote,spoiler,link,unlink,youtube|" +
+         "code,quote,horizontalrule|image,quote,spoiler,code,link,unlink,youtube|" +
          "ltr,rtl",
         resizeEnabled: true,
         plugins: "bbcode",
