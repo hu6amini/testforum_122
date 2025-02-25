@@ -1,10 +1,6 @@
 $(document).ready(function () {
     var $post = $("#Post");
-
-    // Only clear if there's no existing content (i.e., new post, not editing)
-    if (!$post.val().trim()) {
-        $post.val(""); 
-    }
+    $post.attr("placeholder", "Write your reply..."); // Set placeholder
 
     $post.sceditor({
         format: "bbcode",
