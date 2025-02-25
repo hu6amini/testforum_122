@@ -2,6 +2,8 @@ $(document).ready(function () {
     var $post = $("#Post");
     $post.attr("placeholder", "Write your reply..."); // Set placeholder
 
+    var existingContent = $post.val().trim(); // Get existing content
+
     var editor = $post.sceditor({
         format: "bbcode",
         style: "https://cdnjs.cloudflare.com/ajax/libs/sceditor/3.2.0/themes/content/default.min.css",
@@ -16,8 +18,14 @@ $(document).ready(function () {
 
     editor.sourceMode(true);
 
+    // Set the initial content only if there's existing content
+    if (existingContent) {
+        editor.val(existingContent);
+    }
+
     // Sync the content in real-time
     editor.bind("keyup blur nodechanged", function () {
         $post.val(editor.val()); // Update the textarea content
     });
 });
+
