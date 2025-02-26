@@ -25,22 +25,23 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Debounce function to limit the frequency of calls
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
+    // Immediately process images when the DOM is ready
+    prepareLazyImages();
 
-    // Debounced version of prepareLazyImages
-    const debouncedPrepareLazyImages = debounce(prepareLazyImages, 100);
+    // Use IntersectionObserver for lazy loading
+    const lazyImages = document.querySelectorAll(".color img.lazyload");
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.getAttribute("data-src");
+                img.removeAttribute("data-src");
+                observer.unobserve(img);
+            }
+        });
+    });
 
-    // Initial call to process images
-    debouncedPrepareLazyImages();
-
-    // Observe changes in the document
-    const observer = new MutationObserver(debouncedPrepareLazyImages);
-    observer.observe(document.body, { childList: true, subtree: true });
+    lazyImages.forEach(img => {
+        observer.observe(img);
+    });
 });
