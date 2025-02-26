@@ -1,4 +1,4 @@
-window.onload = function () {
+document.addEventListener("DOMContentLoaded", function() {
     function extractImageSize(src, callback) {
         let tempImg = new Image();
         tempImg.src = src;
@@ -24,10 +24,10 @@ window.onload = function () {
         });
     }
 
-    // Initial call to prepare lazy images
-    prepareLazyImages();
+    // Allow a brief timeout before processing images
+    setTimeout(prepareLazyImages, 100);
 
     // Observe changes in the document
     const observer = new MutationObserver(prepareLazyImages);
     observer.observe(document.body, { childList: true, subtree: true });
-};
+});
