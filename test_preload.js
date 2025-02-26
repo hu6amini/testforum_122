@@ -1,1 +1,29 @@
-function loadScript(e,t,n,o,i){var r=document.createElement("script");r.src=e;t&&(r.integrity=t);n&&(r.crossOrigin=n);o&&(r.referrerPolicy=o);i&&(r.async=i);document.head.appendChild(r)}loadScript("https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.3.2/lazysizes.min.js","sha512-q583ppKrCRc7N5O0n2nzUiJ+suUv7Et1JGels4bXOaMFQcamPk9HjdUknZuuFjBNs7tsMuadge5k9RzdmO+1GQ==","anonymous","no-referrer",!0);loadScript("https://cdnjs.cloudflare.com/ajax/libs/emojione/4.5.0/lib/js/emojione.min.js","sha512-E2Ai/A9+KcoBm0lvfnd5krbr7TWUigQGWTfcoMToNpfmCvQKkZdTbpwyIM4PFbCGMtSmMjE/DAXGjVXpWGdFaQ==","anonymous","no-referrer",!0);loadScript("https://cdnjs.cloudflare.com/ajax/libs/lightgallery-js/1.4.0/js/lightgallery.min.js","sha512-b4rL1m5b76KrUhDkj2Vf14Y0l1NtbiNXwV+SzOzLGv6Tz1roJHa70yr8RmTUswrauu2Wgb/xBJPR8v80pQYKtQ==","anonymous","no-referrer",!0);document.addEventListener("DOMContentLoaded",function(){loadScript("https://cdn.jsdelivr.net/gh/hu6amini/testforum_6@main/test.js",null,"anonymous",null,!0);loadScript("https://nb.forumfree.it/scripts/ace/slider.js",null,null,null,!0)});
+document.addEventListener("DOMContentLoaded", function () {
+    function extractImageSize(src, callback) {
+        let tempImg = new Image();
+        tempImg.src = src;
+        tempImg.onload = function () {
+            callback(tempImg.width, tempImg.height);
+        };
+    }
+
+    function prepareLazyImages() {
+        document.querySelectorAll(".color img:not(.lazyload)").forEach(img => {
+            if (!img.hasAttribute("data-src")) {
+                let originalSrc = img.src; // Store original source
+                extractImageSize(originalSrc, (width, height) => {
+                    // Set attributes for lazy loading
+                    img.setAttribute("data-src", originalSrc);
+                    img.setAttribute("src", `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3C/svg%3E`);
+                    img.setAttribute("width", width);
+                    img.setAttribute("height", height);
+                    img.setAttribute("decoding", "async"); // Add decoding attribute
+                    img.classList.add("lazyload"); // Add lazyload class
+                });
+            }
+        });
+    }
+
+    // Call the function to prepare lazy images
+    prepareLazyImages();
+});
