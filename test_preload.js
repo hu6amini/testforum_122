@@ -8,7 +8,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function prepareLazyImages() {
-        document.querySelectorAll(".color img[data-ffbsrc]:not(.lazyload)").forEach(img => {
+        const images = document.querySelectorAll(".color img[data-ffbsrc]:not(.lazyload)");
+        images.forEach(img => {
             let originalSrc = img.getAttribute("data-ffbsrc"); // Get the source from data-ffbsrc
             if (originalSrc) {
                 extractImageSize(originalSrc, function (width, height) {
@@ -24,10 +25,22 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Allow a brief timeout before processing images
-    setTimeout(prepareLazyImages, 100);
+    // Debounce function to limit the frequency of calls
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Debounced version of prepareLazyImages
+    const debouncedPrepareLazyImages = debounce(prepareLazyImages, 100);
+
+    // Initial call to process images
+    debouncedPrepareLazyImages();
 
     // Observe changes in the document
-    const observer = new MutationObserver(prepareLazyImages);
+    const observer = new MutationObserver(debouncedPrepareLazyImages);
     observer.observe(document.body, { childList: true, subtree: true });
 });
