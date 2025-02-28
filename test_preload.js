@@ -1,46 +1,21 @@
-(function() {
-    function extractImageSize(src, callback) {
-        let tempImg = new Image();
-        tempImg.src = src;
-        tempImg.onload = function () {
-            callback(tempImg.width, tempImg.height);
-        };
-        tempImg.onerror = function () {
-            console.error('Failed to load image:', src);
-        };
-    }
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".color img").forEach(function (img) {
+        if (img.complete && img.naturalWidth && img.naturalHeight) {
+            var width = img.naturalWidth;
+            var height = img.naturalHeight;
+            var src = img.src;
 
-    function prepareLazyImages(images) {
-        images.forEach(img => {
-            const originalSrc = img.getAttribute("data-ffbsrc"); // Get the source from data-ffbsrc
-            if (originalSrc && !img.hasAttribute("width")) {
-                extractImageSize(originalSrc, function (width, height) {
-                    // Set attributes for lazy loading
-                    img.setAttribute("width", width);
-                    img.setAttribute("height", height);
-                    img.setAttribute("decoding", "async"); // Add decoding attribute
-                });
+            // Only process if not already lazyloaded
+            if (!img.classList.contains("lazyload")) {
+                img.setAttribute("data-src", src);
+                img.setAttribute("width", width);
+                img.setAttribute("height", height);
+                img.setAttribute("decoding", "async");
+                img.classList.add("lazyload");
+
+                // Set placeholder SVG to avoid layout shifts
+                img.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='" + width + "' height='" + height + "' viewBox='0 0 " + width + " " + height + "'%3E%3C/svg%3E";
             }
-        });
-    }
-
-    function processImages() {
-        const images = document.querySelectorAll(".color img[data-ffbsrc]");
-        prepareLazyImages(images);
-    }
-
-    // Start processing images immediately
-    processImages();
-
-    // Observe changes in the document
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList') {
-                const images = document.querySelectorAll(".color img[data-ffbsrc]");
-                prepareLazyImages(images);
-            }
-        });
+        }
     });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-})();
+});
