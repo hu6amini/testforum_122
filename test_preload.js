@@ -1,29 +1,25 @@
-$(document).ready(function () {
-  // Function to apply Readmore.js to .quote elements inside .color, excluding .ve-content.color
+$(document).ready(function() {
   function applyReadmore(target) {
-    $(target)
-      .find(".quote")
-      .not(".ve-content.color .quote") // Exclude .quote elements inside .ve-content.color
-      .readmore({
-        speed: 382,
-        collapsedHeight: 170,
-        moreLink: '<a href="#">Show More...</a>',
-        lessLink: "",
-        afterToggle: function (trigger, element, expanded) {
-          if (expanded) {
-            $(trigger).remove(); // Removes the "Show More" button after expanding
-          }
-        },
-      });
+    $(target).find(".quote").readmore({
+      speed: 382,
+      collapsedHeight: 170,
+      moreLink: '<a href="#">Show More...</a>',
+      lessLink: '',
+      afterToggle: function(trigger, element, expanded) {
+        if (expanded) {
+          $(trigger).remove(); // Removes the "Show More" button after expanding
+        }
+      }
+    });
   }
 
-  // Apply Readmore.js to initial .color elements
+  // Apply Readmore.js to initial elements
   applyReadmore($(".color"));
 
   // MutationObserver to watch for dynamically added .color elements
-  const quoteObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
+  const quoteObserver = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
         if ($(node).is(".color")) {
           applyReadmore($(node)); // Apply Readmore.js to newly added .color elements
         } else if ($(node).find(".color").length) {
@@ -33,6 +29,5 @@ $(document).ready(function () {
     });
   });
 
-  // Start observing the document body for added nodes
   quoteObserver.observe(document.body, { childList: true, subtree: true });
-}); 
+});
