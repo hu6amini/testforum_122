@@ -1,15 +1,17 @@
 $(document).ready(function() {
   function applyReadmore(target) {
-    $(target).find(".quote").readmore({
-      speed: 382,
-      collapsedHeight: 170,
-      moreLink: '<a href="#">Show More...</a>',
-      lessLink: '',
-      afterToggle: function(trigger, element, expanded) {
-        if (expanded) {
-          $(trigger).remove(); // Removes the "Show More" button after expanding
+    $(target).find(".quote").each(function() {
+      $(this).readmore({
+        speed: 382,
+        collapsedHeight: 170,
+        moreLink: '<div class="quotebtn"><a href="#">Show More...</a></div>',
+        lessLink: '',
+        afterToggle: function(trigger, element, expanded) {
+          if (expanded) {
+            $(trigger).remove(); // Removes the "Show More" button after expanding
+          }
         }
-      }
+      });
     });
   }
 
