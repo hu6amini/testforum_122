@@ -9,14 +9,7 @@ $(document).ready(function() {
         if (expanded) {
           $(trigger).remove(); // Removes the "Show More" button after expanding
         }
-      },
-      embedCSS: false // This prevents Readmore.js from injecting CSS, so we can customize the button style
-    });
-
-    // Move the "Show More" button inside the .quote at the bottom
-    $(target).find(".quote .readmore-wrapper").each(function() {
-      const button = $(this).find("a");
-      $(this).closest(".quote").append(button); // Append the button at the bottom of .quote
+      }
     });
   }
 
