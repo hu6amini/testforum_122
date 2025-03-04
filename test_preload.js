@@ -1,13 +1,33 @@
 $(document).ready(function() {
-  $(".color .quote").readmore({
-    speed: 328,
-    collapsedHeight: 170,
-    moreLink: '<a href="#">Show More...</a>',
-    lessLink: '', // Removes the "Show Less" button
-    afterToggle: function(trigger, element, expanded) {
-      if (expanded) {
-        $(trigger).remove(); // Removes the button after expanding
+  function applyReadmore(target) {
+    $(target).find(".quote").readmore({
+      speed: 150,
+      collapsedHeight: 170,
+      moreLink: '<a href="#">Show More...</a>',
+      lessLink: '',
+      afterToggle: function(trigger, element, expanded) {
+        if (expanded) {
+          $(trigger).remove(); // Removes the "Show More" button after expanding
+        }
       }
-    }
+    });
+  }
+
+  // Apply Readmore.js to initial elements
+  applyReadmore($(".color"));
+
+  // MutationObserver to watch for dynamically added .color elements
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if ($(node).is(".color")) {
+          applyReadmore($(node)); // Apply Readmore.js to newly added .color elements
+        } else if ($(node).find(".color").length) {
+          applyReadmore($(node).find(".color")); // If a parent contains .color elements, apply Readmore.js
+        }
+      });
+    });
   });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 });
