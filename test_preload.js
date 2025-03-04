@@ -1,4 +1,5 @@
 $(document).ready(function () {
+  // Function to apply Readmore.js to .quote elements inside .color, excluding .ve-content.color
   function applyReadmore(target) {
     $(target)
       .find(".quote")
@@ -6,17 +7,11 @@ $(document).ready(function () {
       .readmore({
         speed: 382,
         collapsedHeight: 170,
-        moreLink: '<a href="#" class="quote-expand">Show More...</a>',
+        moreLink: '<a href="#">Show More...</a>',
         lessLink: "",
-        beforeToggle: function (trigger, element, expanded) {
-          if (!expanded) {
-            // Move the "Show More" link inside the .quote at the bottom
-            $(element).append($(trigger));
-          }
-        },
         afterToggle: function (trigger, element, expanded) {
           if (expanded) {
-            $(trigger).remove(); // Remove the "Show More" button after expanding
+            $(trigger).remove(); // Removes the "Show More" button after expanding
           }
         },
       });
@@ -40,4 +35,4 @@ $(document).ready(function () {
 
   // Start observing the document body for added nodes
   quoteObserver.observe(document.body, { childList: true, subtree: true });
-});
+}); 
