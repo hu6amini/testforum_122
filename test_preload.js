@@ -11,14 +11,6 @@ $(document).ready(function() {
         }
       }
     });
-
-    // Move the Show More button inside the .quote at the bottom
-    $(target).find(".quote").each(function() {
-      var moreLink = $(this).find(".readmore-more");
-      if (moreLink.length) {
-        $(this).append(moreLink); // Move the "Show More" inside the quote
-      }
-    });
   }
 
   // Apply Readmore.js to initial elements
