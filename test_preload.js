@@ -1,6 +1,6 @@
 $(document).ready(function() {
   $(".color .quote").readmore({
-    speed: 150,
+    speed: 100,
     collapsedHeight: 170,
     moreLink: '<a href="#">Show More...</a>',
     lessLink: '', // Removes the "Show Less" button
