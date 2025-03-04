@@ -3,14 +3,20 @@ $(document).ready(function() {
     $(target).find(".quote").readmore({
       speed: 382,
       collapsedHeight: 170,
-      moreLink: function() {
-        return '<button type="button" class="show-more-btn">Show More...</button>'; // "Show More" button as child
-      },
-      lessLink: '', // Removes the "Show Less" button if you don't need it
+      moreLink: '<a href="#">Show More...</a>',
+      lessLink: '',
       afterToggle: function(trigger, element, expanded) {
         if (expanded) {
           $(trigger).remove(); // Removes the "Show More" button after expanding
         }
+      }
+    });
+
+    // Move the Show More button inside the .quote at the bottom
+    $(target).find(".quote").each(function() {
+      var moreLink = $(this).find(".readmore-more");
+      if (moreLink.length) {
+        $(this).append(moreLink); // Move the "Show More" inside the quote
       }
     });
   }
