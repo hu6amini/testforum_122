@@ -2,7 +2,6 @@
     $(".color .quote").readmore({
       speed: 150,
       collapsedHeight: 170,
-      moreLink: '<a href="#">Show More...</a>',
-      lessLink: '<a href="#">Show Less</a>'
+      moreLink: '<a href="#">Show More...</a>'
     });
   });
