@@ -4,7 +4,7 @@ $(document).ready(function () {
       .find(".quote")
       .not(".ve-content.color .quote") // Exclude .quote elements inside .ve-content.color
       .readmore({
-        speed: 150,
+        speed: 382,
         collapsedHeight: 170,
         moreLink: '<a href="#" class="quote-expand">Show More...</a>',
         lessLink: "",
