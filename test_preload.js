@@ -13,6 +13,7 @@
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === 1) { // Ensure it's an element
+          // Convert NodeList to jQuery object before calling addBack
           const newQuotes = $(node).find('.quote').addBack('.quote').not('.tiptap.ProseMirror .quote');
           if (newQuotes.length) {
             newQuotes.readmore({
