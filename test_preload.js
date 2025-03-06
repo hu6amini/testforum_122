@@ -1,4 +1,4 @@
-function applyReadMore() {
+  function applyReadMore() {
     $('.quote').not('.tiptap.ProseMirror .quote').readmore({
       speed: 300,
       collapsedHeight: 100
@@ -25,5 +25,11 @@ function applyReadMore() {
     });
   });
 
-  // Observe the entire document body for changes using quo.observe
+  // Observe the specific container where AJAX content is added (e.g., #ajaxObject)
+  const ajaxContainer = document.getElementById('ajaxObject');
+  if (ajaxContainer) {
+    quo.observe(ajaxContainer, { childList: true, subtree: true });
+  }
+
+  // Also continue observing the body to catch other dynamic content
   quo.observe(document.body, { childList: true, subtree: true });
