@@ -1,33 +1,29 @@
- $(document).ready(function () {
-    function applyReadMore(target) {
-      $(target).readmore({
-        speed: 382,
-        collapsedHeight: 100,
-        moreLink: '<a href="#">Read more</a>',
-        lessLink: '<a href="#">Read less</a>'
-      });
-    }
+function applyReadMoreToQuotes() {
+    $('.quote').not('.tiptap .ProseMirror .quote').readmore({
+      speed: 300,
+      collapsedHeight: 100,
+    });
+  }
 
-    // Initial application
-    applyReadMore('.quote');
+  // Run on existing elements
+  applyReadMoreToQuotes();
 
-    // MutationObserver to detect new .quote elements
-    quot = quot || {}; // Ensure quot namespace exists
-    quot.observe = new MutationObserver(function (mutations) {
-      mutations.forEach(function (mutation) {
-        if (mutation.type === 'childList') {
-          $(mutation.addedNodes).each(function () {
-            if ($(this).find('.quote').length) {
-              applyReadMore($(this).find('.quote'));
-            }
+  // MutationObserver to track added .quote elements
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) { // Ensure it's an element
+          if ($(node).is('.quote') && !$(node).closest('.tiptap .ProseMirror').length) {
+            $(node).readmore({ speed: 300, collapsedHeight: 100 });
+          }
+          // Check inside added elements
+          $(node).find('.quote').not('.tiptap .ProseMirror .quote').each(function () {
+            $(this).readmore({ speed: 300, collapsedHeight: 100 });
           });
         }
       });
     });
-
-    // Start observing changes inside #ajaxObject (more specific)
-    quot.observe.observe(document.getElementById('ajaxObject'), {
-      childList: true,
-      subtree: true
-    });
   });
+
+  // Observe changes in the body
+  observer.observe(document.body, { childList: true, subtree: true });
