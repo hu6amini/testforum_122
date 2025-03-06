@@ -1,10 +1,11 @@
 $(document).ready(function() {
   function applyReadmore(target) {
+    // Explicitly target .quote elements inside the target
     $(target).find(".quote").readmore({
-      speed: 618,
+      speed: 382,
       collapsedHeight: 170,
-      moreLink: '<button type="button">Show More...</button>', // Use a button instead of an anchor
-      lessLink: '', // You can also customize the "Show Less" button if needed
+      moreLink: '<a href="#">Show More...</a>',
+      lessLink: '',
       afterToggle: function(trigger, element, expanded) {
         if (expanded) {
           $(trigger).remove(); // Removes the "Show More" button after expanding
@@ -13,7 +14,7 @@ $(document).ready(function() {
     });
   }
 
-  // Apply Readmore.js to initial elements
+  // Apply Readmore.js to initial .quote elements inside .color
   applyReadmore($(".color"));
 
   // MutationObserver to watch for dynamically added .color elements
