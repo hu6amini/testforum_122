@@ -1,5 +1,5 @@
  $(document).ready(function() {
-    $('.quote').readmore({
+    $('div[align="center"] .quote').readmore({
       speed: 382,
       collapsedHeight: 170
     });
