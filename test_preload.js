@@ -1,24 +1,33 @@
-$(document).ready(function() {
-    function applyReadMore() {
-      $('div[align="center"] .quote').readmore({
+ $(document).ready(function () {
+    function applyReadMore(target) {
+      $(target).readmore({
         speed: 382,
-        collapsedHeight: 100
+        collapsedHeight: 100,
+        moreLink: '<a href="#">Read more</a>',
+        lessLink: '<a href="#">Read less</a>'
       });
     }
 
-    // Apply Readmore.js initially
-    applyReadMore();
+    // Initial application
+    applyReadMore('.quote');
 
-    // MutationObserver to detect changes
+    // MutationObserver to detect new .quote elements
     quot = quot || {}; // Ensure quot namespace exists
-    quot.observe = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
+    quot.observe = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
         if (mutation.type === 'childList') {
-          applyReadMore(); // Reapply Readmore.js when new content is added
+          $(mutation.addedNodes).each(function () {
+            if ($(this).find('.quote').length) {
+              applyReadMore($(this).find('.quote'));
+            }
+          });
         }
       });
     });
 
-    // Start observing the body for changes
-    quot.observe.observe(document.body, { childList: true, subtree: true });
+    // Start observing changes inside #ajaxObject (more specific)
+    quot.observe.observe(document.getElementById('ajaxObject'), {
+      childList: true,
+      subtree: true
+    });
   });
