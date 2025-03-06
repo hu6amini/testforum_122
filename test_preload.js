@@ -3,7 +3,7 @@ $(document).ready(function() {
     $(target).find(".quote").readmore({
       speed: 382,
       collapsedHeight: 170,
-      moreLink: '<a href="#">Show More...</a>',
+      moreLink: '<a>Show More...</a>',
       lessLink: '',
       afterToggle: function(trigger, element, expanded) {
         if (expanded) {
