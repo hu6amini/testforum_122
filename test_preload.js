@@ -1,7 +1,7 @@
 $(document).ready(function() {
     function applyReadmore(target) {
       $(target).find(".quote").readmore({
-        speed: 382,
+        speed: 618,
         collapsedHeight: 170,
         moreLink: '<a href="#">Show More...</a>',
         lessLink: '',
