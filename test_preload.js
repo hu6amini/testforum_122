@@ -1,4 +1,4 @@
-  function applyReadMore() {
+ function applyReadMore() {
     $('.quote').not('.tiptap.ProseMirror .quote').readmore({
       speed: 300,
       collapsedHeight: 100
@@ -13,8 +13,8 @@
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === 1) { // Ensure it's an element
-          // Convert NodeList to jQuery object before calling addBack
-          const newQuotes = $(node).find('.quote').addBack('.quote').not('.tiptap.ProseMirror .quote');
+          // Use jQuery to filter for new .quote elements
+          const newQuotes = $(node).find('.quote').add(node).filter('.quote').not('.tiptap.ProseMirror .quote');
           if (newQuotes.length) {
             newQuotes.readmore({
               speed: 300,
