@@ -1,31 +1,25 @@
-function applyReadMore(targetElements) {
-    targetElements.each(function () {
-      let $this = $(this);
-      if (!$this.data('readmore-applied')) {  // Ensure Readmore.js is applied only once
-        $this.readmore({
-          speed: 300,
-          collapsedHeight: 100,
-          blockCSS: false // Prevents unwanted jumps by disabling default display:block
-        }).data('readmore-applied', true); // Mark as applied
-      }
+function applyReadMore() {
+    $('.quote').not('.tiptap.ProseMirror .quote').readmore({
+      speed: 300,
+      collapsedHeight: 100
     });
   }
 
   // Apply Readmore.js on initial load
-  $(document).ready(() => applyReadMore($('.quote').not('.tiptap.ProseMirror .quote')));
+  $(document).ready(applyReadMore);
 
   // MutationObserver to detect new .quote elements
   const quo = new MutationObserver(mutations => {
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === 1) { // Ensure it's an element
-          // Select new .quote elements only, excluding .tiptap.ProseMirror
+          // Use jQuery to filter for new .quote elements
           const newQuotes = $(node).find('.quote').add(node).filter('.quote').not('.tiptap.ProseMirror .quote');
           if (newQuotes.length) {
-            applyReadMore(newQuotes);
-
-            // Force reflow to ensure animation works
-            newQuotes.css('display'); // Trigger reflow
+            newQuotes.readmore({
+              speed: 300,
+              collapsedHeight: 100
+            });
           }
         }
       });
