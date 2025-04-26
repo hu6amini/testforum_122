@@ -1,1 +1,119 @@
-document.addEventListener("DOMContentLoaded",(function(){!function(){const e=["#ff7770","#ff6b6b","#ff5154","#ffcb69","#fdc26d","#ffa96c","#ff9f1c","#ff8f5c","#9ce37d","#74c365","#16c172","#3ab795","#4ecdc4","#2dc7ff","#0eb1d2","#009bf5","#a3bcf9","#9b9ece","#9792e3","#8075ff","#b455b0","#a755c2","#a5acb5","#889696"],t=["https://res.cloudinary.com/dbdf6gwgo/image/upload/v1674337715/forum/Avatar/default_avatar_zpw3zz.svg","https://res.cloudinary.com/dbdf6gwgo/image/upload/v1676109015/forum/Avatar/robot_snynw7.svg","https://img.forumfree.net/style_images/default_avatar.png","https://img.forumfree.net/style_images/default_avatar_bot.png"],s=new Map,o=new WeakMap,a=new WeakMap;function r(t){const s=document.createElement("span");return s.className="avatar",s.textContent=function(e){const t=e.match(/[A-Za-z]/);return t?t[0].toUpperCase():e.match(/[0-9]/)?.[0]||e.match(/[^A-Za-z0-9]/)?.[0]||"?"}(t),s.style.backgroundColor=e[Math.min(Math.floor(t.length/Math.ceil(1/e.length)),e.length-1)],s}function c(e,s,o,a,l){const c=document.createElement("a");if(c.className="avatar",c.href=o,e&&!t.includes(e.src)){const t=document.createElement("img");return t.setAttribute("data-src",e.src),t.classList.add("lazyload"),t.decoding="async",t.onerror=function(){const e=l||s.textContent.trim(),o=r(e);c.innerHTML="",c.appendChild(o)},c.appendChild(t),c}else{const e=l||s.textContent.trim(),t=r(e);return c.appendChild(t),c}}async function n(e,t,o){const a=e.href;if(s.has(a)){const e=s.get(a);if(e.failed)return void i(c(null,t,a,e.fullName),o);i(c(e.profileAvatarImg,t,a,e.fullName),o)}else try{const e=await fetch(a),n=await e.text(),l=(new DOMParser).parseFromString(n,"text/html"),d=l.querySelector(".profile .avatar img"),p=l.querySelector(".profile .nick")?.textContent.trim(),u=p||t.textContent.trim();d||p?(s.set(a,{profileAvatarImg:d,fullName:u,failed:!1}),i(c(d,t,a,u),o)):(s.set(a,{failed:!0}),i(c(null,t,a,u),o))}catch{const e=t.textContent.trim();s.set(a,{failed:!0}),i(c(null,t,a,e),o)}}function i(e,t){const s=o.get(t)||{summary:t.closest(".summary .list li"),popup:t.closest(".popup.pop_points ol.users li"),boardStats:t.closest(".stats .zz .users li"),sideStats:t.closest(".side_stats.sidebox .users li"),tagObject:t.closest("#tagObject li"),emojiPostAuthor:t.closest(".st-emoji-epost-author"),sendMainBg:t.closest(".send .mainbg")};o.set(t,s);const{summary:a,popup:r,boardStats:c,sideStats:n,tagObject:i,emojiPostAuthor:l,sendMainBg:d}=s;if(a){const s=t.querySelector(".left.Sub.Item");if(s){const t=document.createElement("div");t.className="summary_details";const o=s.querySelector(".nick");o&&t.appendChild(o),t.appendChild(e),s.insertBefore(t,s.firstChild)}}else if(r&&document.body.matches("#topic, #search"))!t.querySelector(".avatar")&&t.insertBefore(e,t.firstChild);else if(c&&document.body.matches("#board"))!t.querySelector(".avatar")&&t.insertBefore(e,t.firstChild);else if(n&&document.body.matches("#blog"))!t.querySelector(".avatar")&&t.insertBefore(e,t.firstChild);else if(i&&document.body.matches("#board"))!t.querySelector(".avatar")&&t.insertBefore(e,t.firstChild);else if(l&&document.body.matches("#topic"))(!t.previousElementSibling||!t.previousElementSibling.classList.contains("avatar"))&&t.parentNode.insertBefore(e,t);else if(d||t.closest(".send")){const s=document.createElement("div");s.className="send_av",s.appendChild(e),d&&!t.querySelector(".send_av")?t.insertBefore(s,t.firstChild):t.previousElementSibling&&t.previousElementSibling.classList.contains("send_av")||t.parentNode.insertBefore(s,t)}else(!t.previousElementSibling||!t.previousElementSibling.classList.contains("avatar"))&&t.parentNode.insertBefore(e,t)}async function l(e){await Promise.all((Array.isArray(e)?e:[e]).map((async e=>{const t=a.get(e)?.userLink||e.querySelector('a[href*="act=Profile&MID="]');t&&(a.set(e,{userLink:t}),await n(t,t,e))})))}function d(){const e=a.get(document)?.userLink||Array.from(document.querySelectorAll('.menuwrap .left .menu')).find(e=>e.querySelector('span.avatar')&&e.querySelector('span.nick'))?.querySelector('a[href*="act=Profile&MID="]'),t=a.get(document)?.sendMainBg||document.querySelector(".send .mainbg");e&&t&&(a.set(document,{userLink:e,sendMainBg:t}),n(e,e,t))}new MutationObserver((e=>{e.forEach((e=>{if("childList"===e.type&&e.addedNodes.length>0){document.querySelector(".send .mainbg")&&d()}}))})).observe(document.body,{childList:!0,subtree:!0}),new MutationObserver((e=>{const t=[{selector:".big_list .zz .who",bodyMatches:"#board, #forum, #blog, #search"},{selector:".popup.pop_points ol.users li",bodyMatches:"#topic, #search"},{selector:".st-emoji-epost-author",bodyMatches:"#topic"},{selector:".stats .zz .users li",bodyMatches:"#board"},{selector:".side_stats.sidebox .users li",bodyMatches:"#blog"},{selector:"#tagObject li",bodyMatches:"#board"},{selector:".summary .list li",bodyMatches:"#send"},{selector:".post .details",bodyMatches:"#topic, #send"}];e.forEach((e=>{const s=Array.from(e.addedNodes).filter((e=>1===e.nodeType));if(s.length>0){const e=new Set;t.forEach((({selector:t,bodyMatches:o})=>{document.body.matches(o)&&s.forEach((s=>{s.matches(t)?e.add(s):s.querySelectorAll(t).forEach((t=>e.add(t)))}))})),e.size>0&&l(Array.from(e))}}))})).observe(document.body,{childList:!0,subtree:!0}),[{selector:"#tagObject li",bodyMatches:"#board"},{selector:".big_list .zz .who",bodyMatches:"#board, #forum, #blog, #search"},{selector:".popup.pop_points ol.users li",bodyMatches:"#topic, #search"},{selector:".st-emoji-epost-author",bodyMatches:"#topic"},{selector:".stats .zz .users li",bodyMatches:"#board"},{selector:".side_stats.sidebox .users li",bodyMatches:"#blog"},{selector:".summary .list li",bodyMatches:"#send"}].forEach((({selector:e,bodyMatches:t})=>function(e,t){document.body.matches(t)&&l(Array.from(document.querySelectorAll(e)))}(e,t))),document.body.matches("#topic, #send")&&function(){if(document.body.matches("#topic, #send")){const e=document.createDocumentFragment();document.querySelectorAll(".post .details").forEach((t=>{if(!t.querySelector(".avatar")){const s=t.querySelector(".nick:not(a)");if(s&&!s.querySelector('a[href*="act=Profile&MID="]')){const o=r(s.textContent.trim());e.appendChild(o),t.insertBefore(e,t.firstChild)}}}))}}(),d()}()}));
+(function() {
+    // Hide content until processing is done
+    document.documentElement.style.visibility = 'hidden';
+    
+    const imageDimensionsCache = new Map();
+    let isProcessing = false;
+    
+    // Check if image should be skipped
+    const shouldSkipImage = function(img) {
+        return img.closest(".slick_carousel") || 
+               img.closest("#st-visual-editor") || 
+               img.closest(".send") ||
+               img.hasAttribute("data-src") || 
+               img.classList.contains("lazyload") || 
+               img.getAttribute("decoding") === "async" || 
+               img.src.indexOf("data:") === 0;
+    };
+    
+    // Create SVG placeholder (string concatenation version)
+    const createPlaceholder = function(width, height) {
+        return 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + 
+               (width || 100) + '\' height=\'' + (height || 100) + 
+               '\' viewBox=\'0 0 ' + (width || 100) + ' ' + (height || 100) + 
+               '\'%3E%3C/svg%3E';
+    };
+    
+    // Convert image to lazyload format with placeholder
+    const convertToLazyload = function(img, src, width, height) {
+        img.src = createPlaceholder(width, height); // Critical: set placeholder first
+        img.setAttribute('data-src', src);
+        img.classList.add('lazyload');
+        img.setAttribute('decoding', 'async');
+        
+        if (width && height) {
+            img.setAttribute('width', width);
+            img.setAttribute('height', height);
+        }
+    };
+    
+    // Process single image
+    const processImage = function(img) {
+        if (shouldSkipImage(img)) return;
+        
+        var src = img.src;
+        if (!src || src.indexOf('data:') === 0) return;
+        
+        if (imageDimensionsCache.has(src)) {
+            var dimensions = imageDimensionsCache.get(src);
+            convertToLazyload(img, src, dimensions.width, dimensions.height);
+            return;
+        }
+        
+        var loader = new Image();
+        loader.onload = function() {
+            imageDimensionsCache.set(src, {
+                width: loader.naturalWidth,
+                height: loader.naturalHeight
+            });
+            convertToLazyload(img, src, loader.naturalWidth, loader.naturalHeight);
+        };
+        loader.onerror = function() {
+            convertToLazyload(img, src);
+        };
+        loader.src = src;
+    };
+    
+    // Process all images with debounce
+    const processAllImages = function() {
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        var images = document.querySelectorAll('img:not([data-src]):not(.lazyload)');
+        for (var i = 0; i < images.length; i++) {
+            processImage(images[i]);
+        }
+        
+        document.documentElement.style.visibility = 'visible';
+        isProcessing = false;
+    };
+    
+    // MutationObserver for dynamic content
+    var observer = new MutationObserver(function(mutations) {
+        for (var m = 0; m < mutations.length; m++) {
+            var addedNodes = mutations[m].addedNodes;
+            for (var n = 0; n < addedNodes.length; n++) {
+                var node = addedNodes[n];
+                if (node.nodeType === 1) {
+                    if (node.tagName === 'IMG') {
+                        processImage(node);
+                    } else if (node.querySelectorAll) {
+                        var childImages = node.querySelectorAll('img:not([data-src]):not(.lazyload)');
+                        for (var c = 0; c < childImages.length; c++) {
+                            processImage(childImages[c]);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Initialize based on ready state
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', processAllImages);
+    } else {
+        processAllImages();
+    }
+    
+    // Observe document for changes
+    observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
+    
+    // Event listeners for common updates
+    var events = ['ajaxComplete', 'ajaxSuccess', 'load', 'pageshow'];
+    for (var e = 0; e < events.length; e++) {
+        window.addEventListener(events[e], processAllImages, { passive: true });
+    }
+})();
