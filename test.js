@@ -1,119 +1,85 @@
-(function() {
-    // Hide content until processing is done
-    document.documentElement.style.visibility = 'hidden';
-    
-    const imageDimensionsCache = new Map();
-    let isProcessing = false;
-    
-    // Check if image should be skipped
-    const shouldSkipImage = function(img) {
-        return img.closest(".slick_carousel") || 
-               img.closest("#st-visual-editor") || 
-               img.closest(".send") ||
-               img.hasAttribute("data-src") || 
-               img.classList.contains("lazyload") || 
-               img.getAttribute("decoding") === "async" || 
-               img.src.indexOf("data:") === 0;
-    };
-    
-    // Create SVG placeholder (string concatenation version)
-    const createPlaceholder = function(width, height) {
-        return 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'' + 
-               (width || 100) + '\' height=\'' + (height || 100) + 
-               '\' viewBox=\'0 0 ' + (width || 100) + ' ' + (height || 100) + 
-               '\'%3E%3C/svg%3E';
-    };
-    
-    // Convert image to lazyload format with placeholder
-    const convertToLazyload = function(img, src, width, height) {
-        img.src = createPlaceholder(width, height); // Critical: set placeholder first
-        img.setAttribute('data-src', src);
-        img.classList.add('lazyload');
-        img.setAttribute('decoding', 'async');
-        
-        if (width && height) {
-            img.setAttribute('width', width);
-            img.setAttribute('height', height);
-        }
-    };
-    
-    // Process single image
-    const processImage = function(img) {
-        if (shouldSkipImage(img)) return;
-        
-        var src = img.src;
-        if (!src || src.indexOf('data:') === 0) return;
-        
-        if (imageDimensionsCache.has(src)) {
-            var dimensions = imageDimensionsCache.get(src);
-            convertToLazyload(img, src, dimensions.width, dimensions.height);
-            return;
-        }
-        
-        var loader = new Image();
-        loader.onload = function() {
-            imageDimensionsCache.set(src, {
-                width: loader.naturalWidth,
-                height: loader.naturalHeight
-            });
-            convertToLazyload(img, src, loader.naturalWidth, loader.naturalHeight);
-        };
-        loader.onerror = function() {
-            convertToLazyload(img, src);
-        };
-        loader.src = src;
-    };
-    
-    // Process all images with debounce
-    const processAllImages = function() {
-        if (isProcessing) return;
-        isProcessing = true;
-        
-        var images = document.querySelectorAll('img:not([data-src]):not(.lazyload)');
-        for (var i = 0; i < images.length; i++) {
-            processImage(images[i]);
-        }
-        
-        document.documentElement.style.visibility = 'visible';
-        isProcessing = false;
-    };
-    
-    // MutationObserver for dynamic content
-    var observer = new MutationObserver(function(mutations) {
-        for (var m = 0; m < mutations.length; m++) {
-            var addedNodes = mutations[m].addedNodes;
-            for (var n = 0; n < addedNodes.length; n++) {
-                var node = addedNodes[n];
-                if (node.nodeType === 1) {
-                    if (node.tagName === 'IMG') {
-                        processImage(node);
-                    } else if (node.querySelectorAll) {
-                        var childImages = node.querySelectorAll('img:not([data-src]):not(.lazyload)');
-                        for (var c = 0; c < childImages.length; c++) {
-                            processImage(childImages[c]);
-                        }
-                    }
-                }
+(function () {
+  console.log("📌 [Script Start] Document readyState: " + document.readyState);
+  var logTime = function () {
+    return new Date().toISOString().split("T")[1];
+  };
+
+  // Event Timing Logs
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("⏰ DOMContentLoaded at " + logTime());
+  });
+
+  window.addEventListener("load", function () {
+    console.log("✅ Window load event at " + logTime());
+  });
+
+  var trackedEvents = ["pageshow", "ajaxComplete", "ajaxSuccess"];
+  trackedEvents.forEach(function (evt) {
+    window.addEventListener(evt, function () {
+      console.log("📡 Event \"" + evt + "\" triggered at " + logTime());
+    });
+  });
+
+  // Initial Image Check
+  var logImageStatus = function (img, reason) {
+    console.log("🖼️ [" + reason + "] Image detected:", {
+      src: img.src,
+      dataSrc: img.getAttribute("data-src"),
+      lazyload: img.classList.contains("lazyload"),
+      width: img.getAttribute("width"),
+      height: img.getAttribute("height"),
+      decoding: img.getAttribute("decoding"),
+      visible: !!(img.offsetWidth || img.offsetHeight),
+      time: logTime()
+    });
+  };
+
+  var checkImages = function (label) {
+    var imgs = document.querySelectorAll("img");
+    console.log("🔍 Checking all images (" + label + "): found " + imgs.length);
+    imgs.forEach(function (img) {
+      logImageStatus(img, label);
+    });
+  };
+
+  // MutationObserver Setup
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
+      mutation.addedNodes.forEach(function (node) {
+        if (node.nodeType === 1) {
+          if (node.tagName === "IMG") {
+            logImageStatus(node, "Mutation IMG");
+          } else {
+            var imgs = node.querySelectorAll && node.querySelectorAll("img");
+            if (imgs && imgs.length) {
+              imgs.forEach(function (img) {
+                logImageStatus(img, "Mutation IMG in subtree");
+              });
             }
+          }
         }
+      });
     });
-    
-    // Initialize based on ready state
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', processAllImages);
-    } else {
-        processAllImages();
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Run periodic checks
+  var intervalCount = 0;
+  var maxIntervals = 10;
+  var interval = setInterval(function () {
+    checkImages("Interval Check");
+    intervalCount++;
+    if (intervalCount >= maxIntervals) {
+      clearInterval(interval);
+      console.log("⏹️ Stopped periodic checks");
     }
-    
-    // Observe document for changes
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true
-    });
-    
-    // Event listeners for common updates
-    var events = ['ajaxComplete', 'ajaxSuccess', 'load', 'pageshow'];
-    for (var e = 0; e < events.length; e++) {
-        window.addEventListener(events[e], processAllImages, { passive: true });
-    }
+  }, 1000);
+
+  // Final check after full load
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      checkImages("Post-load final check");
+    }, 500);
+  });
 })();
