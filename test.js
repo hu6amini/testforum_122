@@ -69,10 +69,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 element.setAttribute('datetime', date.format());
                 element.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
             } 
-            // Normal handling for other elements
+            // Normal handling for other elements including timeago
             else {
                 const timeElement = document.createElement('time');
-                timeElement.className = 'u-dt';
+                timeElement.className = 'u-dt' + (element.classList.contains('timeago') ? ' timeago' : '');
                 timeElement.setAttribute('dir', 'auto');
                 timeElement.setAttribute('datetime', date.format());
                 timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
@@ -92,7 +92,8 @@ document.addEventListener("DOMContentLoaded", function() {
             '.post-date',
             '.time',
             '.date',
-            '.post .title2.top .when'
+            '.post .title2.top .when',
+            '.notification-date .timeago' // Added this selector
         ];
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(updateTimeElement);
@@ -117,7 +118,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         '.post-date',
                         '.time',
                         '.date',
-                        '.post .title2.top .when'
+                        '.post .title2.top .when',
+                        '.notification-date .timeago' // Added this selector
                     ];
                     selectors.forEach(selector => {
                         if (node.matches(selector)) updateTimeElement(node);
