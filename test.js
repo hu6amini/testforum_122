@@ -27,6 +27,24 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    function updateTimeagoElement(element) {
+        // Get datetime attribute if available, otherwise fallback to title or text content
+        const dateString = element.getAttribute('datetime') || 
+                          element.getAttribute('title') || 
+                          element.textContent.trim();
+        
+        const date = parseDate(dateString);
+        if (date.isValid()) {
+            const timeElement = document.createElement('time');
+            timeElement.className = 'u-dt';
+            timeElement.setAttribute('dir', 'auto');
+            timeElement.setAttribute('datetime', date.format());
+            timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+            timeElement.textContent = formatDate(date);
+            element.replaceWith(timeElement);
+        }
+    }
+
     function updateEditElement(element) {
         const text = element.textContent.trim();
         const match = text.match(/^(Edited by .+?) - (.+)$/);
@@ -54,6 +72,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function updateTimeElement(element) {
         if (element.closest('.edit')) return;
+        if (element.classList.contains('timeago')) return; // Handled separately
         
         let rawText = element.getAttribute('title') || element.textContent.trim();
         
@@ -63,16 +82,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const date = parseDate(rawText);
         if (date.isValid()) {
-            // Special handling for st-emoji-notice-time (preserve original element)
             if (element.classList.contains('st-emoji-notice-time')) {
                 element.textContent = formatDate(date);
                 element.setAttribute('datetime', date.format());
                 element.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
-            } 
-            // Normal handling for other elements including timeago
-            else {
+            } else {
                 const timeElement = document.createElement('time');
-                timeElement.className = 'u-dt' + (element.classList.contains('timeago') ? ' timeago' : '');
+                timeElement.className = 'u-dt';
                 timeElement.setAttribute('dir', 'auto');
                 timeElement.setAttribute('datetime', date.format());
                 timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
@@ -83,8 +99,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function processTimeElements() {
+        // Handle timeago elements first
+        document.querySelectorAll('.timeago').forEach(updateTimeagoElement);
+        
+        // Then handle edit elements
         document.querySelectorAll('.post .edit').forEach(updateEditElement);
         
+        // Then handle other elements
         const selectors = [
             '.big_list .zz .when',
             '.st-emoji-epost-time',
@@ -92,8 +113,7 @@ document.addEventListener("DOMContentLoaded", function() {
             '.post-date',
             '.time',
             '.date',
-            '.post .title2.top .when',
-            '.notification-date .timeago' // Added this selector
+            '.post .title2.top .when'
         ];
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(updateTimeElement);
@@ -106,11 +126,19 @@ document.addEventListener("DOMContentLoaded", function() {
         mutations.forEach(function(mutation) {
             mutation.addedNodes.forEach(function(node) {
                 if (node.nodeType === 1) {
+                    // Check for timeago elements first
+                    if (node.matches('.timeago')) {
+                        updateTimeagoElement(node);
+                    }
+                    node.querySelectorAll('.timeago').forEach(updateTimeagoElement);
+                    
+                    // Then check edit elements
                     if (node.matches('.post .edit')) {
                         updateEditElement(node);
                     }
                     node.querySelectorAll('.post .edit').forEach(updateEditElement);
                     
+                    // Then check other elements
                     const selectors = [
                         '.big_list .zz .when',
                         '.st-emoji-epost-time',
@@ -118,8 +146,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         '.post-date',
                         '.time',
                         '.date',
-                        '.post .title2.top .when',
-                        '.notification-date .timeago' // Added this selector
+                        '.post .title2.top .when'
                     ];
                     selectors.forEach(selector => {
                         if (node.matches(selector)) updateTimeElement(node);
