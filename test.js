@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", function() {
     function parseDate(dateString) {
         const formats = [
-            'M/D/YYYY, h:mm A',
-            'YYYY/M/D H:mm',
-            'YYYY-MM-DDTHH:mm:ssZ'
+            'M/D/YYYY, h:mm A',    // 5/6/2025, 04:45 PM
+            'YYYY/M/D H:mm',       // 2025/05/11 01:17
+            'YYYY-MM-DDTHH:mm:ssZ' // ISO format
         ];
         for (const format of formats) {
             const date = moment(dateString, format, true);
@@ -32,15 +32,14 @@ document.addEventListener("DOMContentLoaded", function() {
         const match = text.match(/^(Edited by .+?) - (.+)$/);
         
         if (match) {
-            const prefix = match[1]; // "Edited by JuNioR"
-            const dateString = match[2]; // "5/2/2025, 08:10 AM"
+            const prefix = match[1];
+            const dateString = match[2];
             
             const date = parseDate(dateString);
             if (date.isValid()) {
                 const formattedDate = date.format('MMM D, YYYY');
                 element.textContent = `${prefix}: ${formattedDate}`;
                 
-                // Add semantic time element if desired
                 const timeElement = document.createElement('time');
                 timeElement.className = 'u-dt';
                 timeElement.setAttribute('datetime', date.format());
@@ -83,6 +82,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const selectors = [
             '.big_list .zz .when',
             '.st-emoji-epost-time',
+            '.st-emoji-notice-time', // Added this selector
             '.post-date',
             '.time',
             '.date',
@@ -109,6 +109,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     const selectors = [
                         '.big_list .zz .when',
                         '.st-emoji-epost-time',
+                        '.st-emoji-notice-time', // Added this selector
                         '.post-date',
                         '.time',
                         '.date',
