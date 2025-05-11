@@ -27,6 +27,32 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    function updateInlineDate(element) {
+        const text = element.textContent;
+        // Match patterns like "X replies since DATE" or "since DATE"
+        const dateMatch = text.match(/(\d+ replies since|since) ([^&]+)(&nbsp;|$)/);
+        
+        if (dateMatch) {
+            const prefix = dateMatch[1];
+            const dateString = dateMatch[2].trim();
+            const suffix = text.substring(dateMatch[0].length);
+            
+            const date = parseDate(dateString);
+            if (date.isValid()) {
+                const formattedDate = formatDate(date);
+                const timeElement = document.createElement('time');
+                timeElement.className = 'u-dt';
+                timeElement.setAttribute('datetime', date.format());
+                timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+                timeElement.textContent = formattedDate;
+                
+                element.innerHTML = `${prefix} `;
+                element.appendChild(timeElement);
+                element.append(document.createTextNode(` ${suffix}`));
+            }
+        }
+    }
+
     function updateTimeagoElement(element) {
         const dateString = element.getAttribute('datetime') || 
                           element.getAttribute('title') || 
@@ -75,7 +101,6 @@ document.addEventListener("DOMContentLoaded", function() {
         
         let rawText = element.getAttribute('title') || element.textContent.trim();
         
-        // Handle elements with leading span (like "Posted" in any language)
         if (element.children.length && element.children[0].tagName === 'SPAN') {
             rawText = element.childNodes[element.childNodes.length - 1].textContent.trim();
         }
@@ -90,10 +115,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 const timeElement = document.createElement('time');
                 timeElement.className = 'u-dt';
                 if (element.classList.contains('when')) {
-                    timeElement.classList.add('when'); // Preserve 'when' class if present
+                    timeElement.classList.add('when');
                 }
                 if (element.classList.contains('Item')) {
-                    timeElement.classList.add('Item'); // Preserve 'Item' class if present
+                    timeElement.classList.add('Item');
                 }
                 timeElement.setAttribute('dir', 'auto');
                 timeElement.setAttribute('datetime', date.format());
@@ -105,7 +130,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function processTimeElements() {
-        // Handle timeago elements first
+        // Handle inline dates first
+        document.querySelectorAll('.title.bottom .left.Sub').forEach(updateInlineDate);
+        
+        // Then handle timeago elements
         document.querySelectorAll('.timeago').forEach(updateTimeagoElement);
         
         // Then handle edit elements
@@ -120,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function() {
             '.time',
             '.date',
             '.post .title2.top .when',
-            '.summary .when' // Added this selector
+            '.summary .when'
         ];
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(updateTimeElement);
@@ -133,7 +161,13 @@ document.addEventListener("DOMContentLoaded", function() {
         mutations.forEach(function(mutation) {
             mutation.addedNodes.forEach(function(node) {
                 if (node.nodeType === 1) {
-                    // Check for timeago elements first
+                    // Check for inline dates first
+                    if (node.matches('.title.bottom .left.Sub')) {
+                        updateInlineDate(node);
+                    }
+                    node.querySelectorAll('.title.bottom .left.Sub').forEach(updateInlineDate);
+                    
+                    // Then check timeago elements
                     if (node.matches('.timeago')) {
                         updateTimeagoElement(node);
                     }
@@ -154,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         '.time',
                         '.date',
                         '.post .title2.top .when',
-                        '.summary .when' // Added this selector
+                        '.summary .when'
                     ];
                     selectors.forEach(selector => {
                         if (node.matches(selector)) updateTimeElement(node);
