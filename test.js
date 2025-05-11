@@ -69,37 +69,37 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    function updateWhenElement(element) {
+    function updateTimeElement(element) {
+        if (element.closest('.edit')) return;
+        if (element.classList.contains('timeago')) return;
+        
         let rawText = element.getAttribute('title') || element.textContent.trim();
         
-        // Handle elements with leading span (like "Posted")
+        // Handle elements with leading span (like "Posted" in any language)
         if (element.children.length && element.children[0].tagName === 'SPAN') {
             rawText = element.childNodes[element.childNodes.length - 1].textContent.trim();
         }
 
         const date = parseDate(rawText);
         if (date.isValid()) {
-            const timeElement = document.createElement('time');
-            timeElement.className = 'u-dt';
-            timeElement.setAttribute('dir', 'auto');
-            timeElement.setAttribute('datetime', date.format());
-            timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
-            timeElement.textContent = formatDate(date);
-            element.replaceWith(timeElement);
-        }
-    }
-
-    function updateTimeElement(element) {
-        if (element.closest('.edit')) return;
-        if (element.classList.contains('timeago')) return;
-        
-        if (element.classList.contains('st-emoji-notice-time')) {
-            const rawText = element.getAttribute('title') || element.textContent.trim();
-            const date = parseDate(rawText);
-            if (date.isValid()) {
+            if (element.classList.contains('st-emoji-notice-time')) {
                 element.textContent = formatDate(date);
                 element.setAttribute('datetime', date.format());
                 element.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+            } else {
+                const timeElement = document.createElement('time');
+                timeElement.className = 'u-dt';
+                if (element.classList.contains('when')) {
+                    timeElement.classList.add('when'); // Preserve 'when' class if present
+                }
+                if (element.classList.contains('Item')) {
+                    timeElement.classList.add('Item'); // Preserve 'Item' class if present
+                }
+                timeElement.setAttribute('dir', 'auto');
+                timeElement.setAttribute('datetime', date.format());
+                timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+                timeElement.textContent = formatDate(date);
+                element.replaceWith(timeElement);
             }
         }
     }
@@ -111,9 +111,6 @@ document.addEventListener("DOMContentLoaded", function() {
         // Then handle edit elements
         document.querySelectorAll('.post .edit').forEach(updateEditElement);
         
-        // Then handle .when elements (both post and summary)
-        document.querySelectorAll('.post .when, .summary .when').forEach(updateWhenElement);
-        
         // Then handle other elements
         const selectors = [
             '.big_list .zz .when',
@@ -122,7 +119,8 @@ document.addEventListener("DOMContentLoaded", function() {
             '.post-date',
             '.time',
             '.date',
-            '.post .title2.top .when'
+            '.post .title2.top .when',
+            '.summary .when' // Added this selector
         ];
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(updateTimeElement);
@@ -147,12 +145,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                     node.querySelectorAll('.post .edit').forEach(updateEditElement);
                     
-                    // Then check .when elements
-                    if (node.matches('.post .when, .summary .when')) {
-                        updateWhenElement(node);
-                    }
-                    node.querySelectorAll('.post .when, .summary .when').forEach(updateWhenElement);
-                    
                     // Then check other elements
                     const selectors = [
                         '.big_list .zz .when',
@@ -161,7 +153,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         '.post-date',
                         '.time',
                         '.date',
-                        '.post .title2.top .when'
+                        '.post .title2.top .when',
+                        '.summary .when' // Added this selector
                     ];
                     selectors.forEach(selector => {
                         if (node.matches(selector)) updateTimeElement(node);
