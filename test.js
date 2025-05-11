@@ -22,10 +22,9 @@ document.addEventListener("DOMContentLoaded", function() {
             return 'Yesterday at ' + date.format('h:mm A');
         } else if (diff < 168) { // Within a week (168 hours)
             return date.format('dddd [at] h:mm A'); // "Monday at 3:30 PM"
-        } else if (date.year() === now.year()) {
-            return date.format('MMM D'); // "May 11" (no time)
         } else {
-            return date.format('MMM D, YYYY'); // "May 11, 2025" (no time)
+            // Always show year when more than a week has passed
+            return date.format('MMM D, YYYY'); // "Jan 24, 2025"
         }
     }
 
