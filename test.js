@@ -70,10 +70,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function updateWhenElement(element) {
-        // Handle both .post .when and .summary .when elements
         let rawText = element.getAttribute('title') || element.textContent.trim();
         
-        // Remove any leading child span (like "Posted")
+        // Handle elements with leading span (like "Posted")
         if (element.children.length && element.children[0].tagName === 'SPAN') {
             rawText = element.childNodes[element.childNodes.length - 1].textContent.trim();
         }
@@ -93,28 +92,14 @@ document.addEventListener("DOMContentLoaded", function() {
     function updateTimeElement(element) {
         if (element.closest('.edit')) return;
         if (element.classList.contains('timeago')) return;
-        if (element.matches('.when')) return; // Handled separately
         
-        let rawText = element.getAttribute('title') || element.textContent.trim();
-        
-        if (element.children.length && element.children[0].tagName === 'SPAN') {
-            rawText = element.childNodes[element.childNodes.length - 1].textContent.trim();
-        }
-
-        const date = parseDate(rawText);
-        if (date.isValid()) {
-            if (element.classList.contains('st-emoji-notice-time')) {
+        if (element.classList.contains('st-emoji-notice-time')) {
+            const rawText = element.getAttribute('title') || element.textContent.trim();
+            const date = parseDate(rawText);
+            if (date.isValid()) {
                 element.textContent = formatDate(date);
                 element.setAttribute('datetime', date.format());
                 element.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
-            } else {
-                const timeElement = document.createElement('time');
-                timeElement.className = 'u-dt';
-                timeElement.setAttribute('dir', 'auto');
-                timeElement.setAttribute('datetime', date.format());
-                timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
-                timeElement.textContent = formatDate(date);
-                element.replaceWith(timeElement);
             }
         }
     }
@@ -136,7 +121,8 @@ document.addEventListener("DOMContentLoaded", function() {
             '.st-emoji-notice-time',
             '.post-date',
             '.time',
-            '.date'
+            '.date',
+            '.post .title2.top .when'
         ];
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(updateTimeElement);
@@ -162,10 +148,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     node.querySelectorAll('.post .edit').forEach(updateEditElement);
                     
                     // Then check .when elements
-                    if (node.matches('.when')) {
+                    if (node.matches('.post .when, .summary .when')) {
                         updateWhenElement(node);
                     }
-                    node.querySelectorAll('.when').forEach(updateWhenElement);
+                    node.querySelectorAll('.post .when, .summary .when').forEach(updateWhenElement);
                     
                     // Then check other elements
                     const selectors = [
@@ -174,7 +160,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         '.st-emoji-notice-time',
                         '.post-date',
                         '.time',
-                        '.date'
+                        '.date',
+                        '.post .title2.top .when'
                     ];
                     selectors.forEach(selector => {
                         if (node.matches(selector)) updateTimeElement(node);
