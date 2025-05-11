@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", function() {
     function parseDate(dateString) {
         const formats = [
-            'M/D/YYYY, h:mm A',    // 5/6/2025, 04:45 PM
-            'YYYY/M/D H:mm',       // 2025/05/11 01:17
-            'YYYY-MM-DDTHH:mm:ssZ' // ISO format
+            'M/D/YYYY, h:mm A',
+            'YYYY/M/D H:mm',
+            'YYYY-MM-DDTHH:mm:ssZ'
         ];
         for (const format of formats) {
             const date = moment(dateString, format, true);
@@ -53,7 +53,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function updateTimeElement(element) {
-        // Skip edit elements as they're handled separately
         if (element.closest('.edit')) return;
         
         let rawText = element.getAttribute('title') || element.textContent.trim();
@@ -64,25 +63,32 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const date = parseDate(rawText);
         if (date.isValid()) {
-            const timeElement = document.createElement('time');
-            timeElement.className = 'u-dt';
-            timeElement.setAttribute('dir', 'auto');
-            timeElement.setAttribute('datetime', date.format());
-            timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
-            timeElement.textContent = formatDate(date);
-            element.replaceWith(timeElement);
+            // Special handling for st-emoji-notice-time (preserve original element)
+            if (element.classList.contains('st-emoji-notice-time')) {
+                element.textContent = formatDate(date);
+                element.setAttribute('datetime', date.format());
+                element.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+            } 
+            // Normal handling for other elements
+            else {
+                const timeElement = document.createElement('time');
+                timeElement.className = 'u-dt';
+                timeElement.setAttribute('dir', 'auto');
+                timeElement.setAttribute('datetime', date.format());
+                timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+                timeElement.textContent = formatDate(date);
+                element.replaceWith(timeElement);
+            }
         }
     }
 
     function processTimeElements() {
-        // Handle edit elements first
         document.querySelectorAll('.post .edit').forEach(updateEditElement);
         
-        // Then handle other elements
         const selectors = [
             '.big_list .zz .when',
             '.st-emoji-epost-time',
-            '.st-emoji-notice-time', // Added this selector
+            '.st-emoji-notice-time',
             '.post-date',
             '.time',
             '.date',
@@ -99,17 +105,15 @@ document.addEventListener("DOMContentLoaded", function() {
         mutations.forEach(function(mutation) {
             mutation.addedNodes.forEach(function(node) {
                 if (node.nodeType === 1) {
-                    // Check for edit elements first
                     if (node.matches('.post .edit')) {
                         updateEditElement(node);
                     }
                     node.querySelectorAll('.post .edit').forEach(updateEditElement);
                     
-                    // Then check other elements
                     const selectors = [
                         '.big_list .zz .when',
                         '.st-emoji-epost-time',
-                        '.st-emoji-notice-time', // Added this selector
+                        '.st-emoji-notice-time',
                         '.post-date',
                         '.time',
                         '.date',
