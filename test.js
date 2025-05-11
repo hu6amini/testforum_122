@@ -69,13 +69,29 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    function updateProfileDate(dlElement) {
+        const whenElement = dlElement.querySelector('.when');
+        if (!whenElement) return;
+        
+        const dateString = whenElement.textContent.trim();
+        const date = parseDate(dateString);
+        if (!date.isValid()) return;
+        
+        const timeElement = document.createElement('time');
+        timeElement.className = 'u-dt';
+        timeElement.setAttribute('datetime', date.format());
+        timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+        timeElement.textContent = date.format('MMM D, YYYY');
+        
+        whenElement.replaceWith(timeElement);
+    }
+
     function updateTimeElement(element) {
         if (element.closest('.edit')) return;
         if (element.classList.contains('timeago')) return;
         
         let rawText = element.getAttribute('title') || element.textContent.trim();
         
-        // Handle elements with leading span (like "Posted" in any language)
         if (element.children.length && element.children[0].tagName === 'SPAN') {
             rawText = element.childNodes[element.childNodes.length - 1].textContent.trim();
         }
@@ -90,10 +106,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 const timeElement = document.createElement('time');
                 timeElement.className = 'u-dt';
                 if (element.classList.contains('when')) {
-                    timeElement.classList.add('when'); // Preserve 'when' class if present
+                    timeElement.classList.add('when');
                 }
                 if (element.classList.contains('Item')) {
-                    timeElement.classList.add('Item'); // Preserve 'Item' class if present
+                    timeElement.classList.add('Item');
                 }
                 timeElement.setAttribute('dir', 'auto');
                 timeElement.setAttribute('datetime', date.format());
@@ -105,13 +121,16 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function processTimeElements() {
-        // Handle timeago elements first
+        // Handle profile dates first
+        document.querySelectorAll('dl.profile-joined, dl.profile-lastaction').forEach(updateProfileDate);
+        
+        // Handle timeago elements
         document.querySelectorAll('.timeago').forEach(updateTimeagoElement);
         
-        // Then handle edit elements
+        // Handle edit elements
         document.querySelectorAll('.post .edit').forEach(updateEditElement);
         
-        // Then handle other elements
+        // Handle other elements
         const selectors = [
             '.big_list .zz .when',
             '.st-emoji-epost-time',
@@ -120,7 +139,7 @@ document.addEventListener("DOMContentLoaded", function() {
             '.time',
             '.date',
             '.post .title2.top .when',
-            '.summary .when' // Added this selector
+            '.summary .when'
         ];
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(updateTimeElement);
@@ -133,19 +152,25 @@ document.addEventListener("DOMContentLoaded", function() {
         mutations.forEach(function(mutation) {
             mutation.addedNodes.forEach(function(node) {
                 if (node.nodeType === 1) {
-                    // Check for timeago elements first
+                    // Check for profile dates
+                    if (node.matches('dl.profile-joined, dl.profile-lastaction')) {
+                        updateProfileDate(node);
+                    }
+                    node.querySelectorAll('dl.profile-joined, dl.profile-lastaction').forEach(updateProfileDate);
+                    
+                    // Check for timeago elements
                     if (node.matches('.timeago')) {
                         updateTimeagoElement(node);
                     }
                     node.querySelectorAll('.timeago').forEach(updateTimeagoElement);
                     
-                    // Then check edit elements
+                    // Check for edit elements
                     if (node.matches('.post .edit')) {
                         updateEditElement(node);
                     }
                     node.querySelectorAll('.post .edit').forEach(updateEditElement);
                     
-                    // Then check other elements
+                    // Check other elements
                     const selectors = [
                         '.big_list .zz .when',
                         '.st-emoji-epost-time',
@@ -154,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         '.time',
                         '.date',
                         '.post .title2.top .when',
-                        '.summary .when' // Added this selector
+                        '.summary .when'
                     ];
                     selectors.forEach(selector => {
                         if (node.matches(selector)) updateTimeElement(node);
