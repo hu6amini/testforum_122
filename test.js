@@ -1,85 +1,97 @@
-(function () {
-  console.log("📌 [Script Start] Document readyState: " + document.readyState);
-  var logTime = function () {
-    return new Date().toISOString().split("T")[1];
-  };
-
-  // Event Timing Logs
-  document.addEventListener("DOMContentLoaded", function () {
-    console.log("⏰ DOMContentLoaded at " + logTime());
-  });
-
-  window.addEventListener("load", function () {
-    console.log("✅ Window load event at " + logTime());
-  });
-
-  var trackedEvents = ["pageshow", "ajaxComplete", "ajaxSuccess"];
-  trackedEvents.forEach(function (evt) {
-    window.addEventListener(evt, function () {
-      console.log("📡 Event \"" + evt + "\" triggered at " + logTime());
-    });
-  });
-
-  // Initial Image Check
-  var logImageStatus = function (img, reason) {
-    console.log("🖼️ [" + reason + "] Image detected:", {
-      src: img.src,
-      dataSrc: img.getAttribute("data-src"),
-      lazyload: img.classList.contains("lazyload"),
-      width: img.getAttribute("width"),
-      height: img.getAttribute("height"),
-      decoding: img.getAttribute("decoding"),
-      visible: !!(img.offsetWidth || img.offsetHeight),
-      time: logTime()
-    });
-  };
-
-  var checkImages = function (label) {
-    var imgs = document.querySelectorAll("img");
-    console.log("🔍 Checking all images (" + label + "): found " + imgs.length);
-    imgs.forEach(function (img) {
-      logImageStatus(img, label);
-    });
-  };
-
-  // MutationObserver Setup
-  var observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
-      mutation.addedNodes.forEach(function (node) {
-        if (node.nodeType === 1) {
-          if (node.tagName === "IMG") {
-            logImageStatus(node, "Mutation IMG");
-          } else {
-            var imgs = node.querySelectorAll && node.querySelectorAll("img");
-            if (imgs && imgs.length) {
-              imgs.forEach(function (img) {
-                logImageStatus(img, "Mutation IMG in subtree");
-              });
-            }
-          }
+document.addEventListener("DOMContentLoaded", function() {
+    function parseDate(dateString) {
+        const formats = [
+            'M/D/YYYY, h:mm A',
+            'YYYY/M/D H:mm',
+            'YYYY-MM-DDTHH:mm:ssZ'
+        ];
+        for (const format of formats) {
+            const date = moment(dateString, format, true);
+            if (date.isValid()) return date;
         }
-      });
-    });
-  });
-
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-
-  // Run periodic checks
-  var intervalCount = 0;
-  var maxIntervals = 10;
-  var interval = setInterval(function () {
-    checkImages("Interval Check");
-    intervalCount++;
-    if (intervalCount >= maxIntervals) {
-      clearInterval(interval);
-      console.log("⏹️ Stopped periodic checks");
+        return moment(new Date(dateString));
     }
-  }, 1000);
 
-  // Final check after full load
-  window.addEventListener("load", function () {
-    setTimeout(function () {
-      checkImages("Post-load final check");
-    }, 500);
-  });
-})();
+    function formatDate(date) {
+        const now = moment();
+        const diff = now.diff(date, 'hours');
+        
+        if (diff < 24) {
+            return date.fromNow(); // "2 hours ago", "5 minutes ago", etc.
+        } else if (diff < 48) {
+            return 'Yesterday at ' + date.format('h:mm A');
+        } else if (diff < 168) { // Within a week (168 hours)
+            return date.format('dddd [at] h:mm A'); // "Monday at 3:30 PM"
+        } else if (date.year() === now.year()) {
+            return date.format('MMM D'); // "May 11" (no time)
+        } else {
+            return date.format('MMM D, YYYY'); // "May 11, 2025" (no time)
+        }
+    }
+
+    function updateTimeElement(element) {
+        // Handle elements with leading span (like "Posted on")
+        let rawText = element.getAttribute('title') || element.textContent.trim();
+        
+        // Attempt to remove a leading child span if it exists
+        if (element.children.length && element.children[0].tagName === 'SPAN') {
+            rawText = element.childNodes[element.childNodes.length - 1].textContent.trim();
+        }
+
+        const date = parseDate(rawText);
+        if (date.isValid()) {
+            const timeElement = document.createElement('time');
+            timeElement.className = 'u-dt';
+            timeElement.setAttribute('dir', 'auto');
+            timeElement.setAttribute('datetime', date.format());
+            
+            // Always show full date/time in title/tooltip
+            timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A'));
+            
+            timeElement.textContent = formatDate(date);
+            element.replaceWith(timeElement);
+        }
+    }
+
+    function processTimeElements() {
+        const selectors = [
+            '.big_list .zz .when',
+            '.st-emoji-epost-time',
+            '.post-date',
+            '.time',
+            '.date',
+            '.post .title2.top .when'
+        ];
+        selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(updateTimeElement);
+        });
+    }
+
+    processTimeElements();
+
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                    const selectors = [
+                        '.big_list .zz .when',
+                        '.st-emoji-epost-time',
+                        '.post-date',
+                        '.time',
+                        '.date',
+                        '.post .title2.top .when'
+                    ];
+                    selectors.forEach(selector => {
+                        if (node.matches(selector)) updateTimeElement(node);
+                        node.querySelectorAll(selector).forEach(updateTimeElement);
+                    });
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+});
