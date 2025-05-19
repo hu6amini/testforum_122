@@ -162,11 +162,8 @@ document.addEventListener("DOMContentLoaded", function() {
     
     function updateEditElement(element) { 
         try {
-            // Only process on topic/search pages
+            // Only process in topic or search pages
             if (!document.body.matches('#topic, #search')) return;
-            
-            // Skip if already processed (has a time child)
-            if (element.querySelector('time.u-dt')) return;
             
             var text = element.textContent.trim(); 
             var match = text.match(/^(Edited by .+?) - (.+)$/); 
@@ -177,30 +174,21 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 var date = parseDate(dateString); 
                 if (date.isValid()) { 
-                    // Create wrapper to maintain structure
-                    var wrapper = document.createElement('span');
-                    wrapper.className = 'edit';
+                    var formattedDate = date.format('MMM D, YYYY'); 
+                    element.textContent = prefix + ': ' + formattedDate; 
                     
-                    // Add prefix
-                    var prefixSpan = document.createElement('span');
-                    prefixSpan.textContent = prefix + ': ';
-                    wrapper.appendChild(prefixSpan);
-                    
-                    // Add time element
                     var timeElement = document.createElement('time'); 
                     timeElement.className = 'u-dt'; 
                     timeElement.setAttribute('datetime', date.format()); 
                     timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
-                    timeElement.textContent = date.format('MMM D, YYYY');
+                    timeElement.textContent = formattedDate;
                     timeElement.style.visibility = 'visible';
-                    wrapper.appendChild(timeElement);
                     
-                    // Replace original element
-                    element.replaceWith(wrapper);
+                    element.innerHTML = prefix + ': '; 
+                    element.appendChild(timeElement); 
                 } 
             }
         } catch (e) {
-            console.error('Error processing edit element:', e);
             return;
         }
     } 
@@ -583,105 +571,93 @@ document.addEventListener("DOMContentLoaded", function() {
     var timestampObserver = new MutationObserver(function(mutations) { 
         try {
             mutations.forEach(function(mutation) { 
-                // Handle both added nodes and character data changes
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(function(node) { 
-                        if (node.nodeType === 1) { 
-                            if (node.matches('dl.profile-joined, dl.profile-lastaction')) { 
-                                updateProfileDate(node); 
-                            } 
-                            node.querySelectorAll('dl.profile-joined, dl.profile-lastaction').forEach(updateProfileDate); 
-                            
-                            if (node.matches('.timeago')) { 
-                                updateTimeagoElement(node); 
-                            } 
-                            node.querySelectorAll('.timeago').forEach(updateTimeagoElement); 
-                            
-                            if (node.matches('.post .edit') && document.body.matches('#topic, #search')) { 
-                                updateEditElement(node); 
-                            } 
-                            if (document.body.matches('#topic, #search')) {
-                                node.querySelectorAll('.post .edit').forEach(updateEditElement); 
-                            }
-                            
-                            if (document.body.matches('#online') && node.matches('.online .yy .when')) { 
-                                updateOnlineWhenElement(node); 
-                            } 
-                            if (document.body.matches('#online')) { 
-                                node.querySelectorAll('.online .yy .when').forEach(updateOnlineWhenElement); 
-                            } 
-                            
-                            if (document.body.matches('#blog') && node.matches('.article .title2.top .when')) { 
-                                updateArticleWhenElement(node); 
-                            } 
-                            if (document.body.matches('#blog') && node.matches('.bt_mini .when')) { 
-                                updateBtMiniWhenElement(node); 
-                            } 
-                            if (document.body.matches('#blog') && node.matches('.mini_buttons .when')) { 
-                                updateMiniButtonsWhenElement(node); 
-                            } 
-                            if (document.body.matches('#blog')) { 
-                                node.querySelectorAll('.article .title2.top .when').forEach(updateArticleWhenElement); 
-                                node.querySelectorAll('.bt_mini .when').forEach(updateBtMiniWhenElement); 
-                                node.querySelectorAll('.mini_buttons .when').forEach(updateMiniButtonsWhenElement); 
-                            } 
-                            
-                            if (document.body.matches('#group, #members') && node.matches('.big_list .cc')) { 
-                                updateCcElement(node); 
-                            } 
-                            if (document.body.matches('#group, #members')) { 
-                                node.querySelectorAll('.big_list .cc').forEach(updateCcElement); 
-                            }
-                            
-                            if (document.body.matches('#board') && node.matches('.side_topics .when')) {
-                                updateSideTopicsWhenElement(node);
-                            }
-                            if (document.body.matches('#board') && node.matches('.lastarticles .topic .when')) {
-                                updateLastArticlesWhenElement(node);
-                            }
-                            if (document.body.matches('#board')) {
-                                node.querySelectorAll('.side_topics .when').forEach(updateSideTopicsWhenElement);
-                                node.querySelectorAll('.lastarticles .topic .when').forEach(updateLastArticlesWhenElement);
-                            }
-                            
-                            // Handle emoji time elements in new nodes
-                            if (node.matches('.st-emoji-epost-time, .st-emoji-notice-time')) {
-                                updateEmojiTimeElement(node);
-                            }
-                            node.querySelectorAll('.st-emoji-epost-time, .st-emoji-notice-time').forEach(updateEmojiTimeElement);
-                            
-                            var selectors = [ 
-                                '.big_list .zz .when', 
-                                '.post-date', 
-                                '.time', 
-                                '.date', 
-                                '.post .title2.top .when', 
-                                '.summary .when' 
-                            ]; 
-                            
-                            for (var i = 0; i < selectors.length; i++) { 
-                                var selector = selectors[i]; 
-                                if (node.matches(selector)) { 
-                                    updateTimeElement(node, selector); 
-                                } 
-                                node.querySelectorAll(selector).forEach(function(element) { 
-                                    updateTimeElement(element, selector); 
-                                }); 
-                            } 
+                mutation.addedNodes.forEach(function(node) { 
+                    if (node.nodeType === 1) { 
+                        if (node.matches('dl.profile-joined, dl.profile-lastaction')) { 
+                            updateProfileDate(node); 
                         } 
-                    }); 
-                }
-                
-                // Handle text changes in existing elements
-                if (mutation.type === 'characterData') {
-                    var element = mutation.target.parentElement;
-                    if (element.matches('.post .edit') && document.body.matches('#topic, #search')) {
-                        updateEditElement(element);
-                    }
-                }
+                        node.querySelectorAll('dl.profile-joined, dl.profile-lastaction').forEach(updateProfileDate); 
+                        
+                        if (node.matches('.timeago')) { 
+                            updateTimeagoElement(node); 
+                        } 
+                        node.querySelectorAll('.timeago').forEach(updateTimeagoElement); 
+                        
+                        if (node.matches('.post .edit') && document.body.matches('#topic, #search')) { 
+                            updateEditElement(node); 
+                        } 
+                        if (document.body.matches('#topic, #search')) { 
+                            node.querySelectorAll('.post .edit').forEach(updateEditElement); 
+                        } 
+                        
+                        if (document.body.matches('#online') && node.matches('.online .yy .when')) { 
+                            updateOnlineWhenElement(node); 
+                        } 
+                        if (document.body.matches('#online')) { 
+                            node.querySelectorAll('.online .yy .when').forEach(updateOnlineWhenElement); 
+                        } 
+                        
+                        if (document.body.matches('#blog') && node.matches('.article .title2.top .when')) { 
+                            updateArticleWhenElement(node); 
+                        } 
+                        if (document.body.matches('#blog') && node.matches('.bt_mini .when')) { 
+                            updateBtMiniWhenElement(node); 
+                        } 
+                        if (document.body.matches('#blog') && node.matches('.mini_buttons .when')) { 
+                            updateMiniButtonsWhenElement(node); 
+                        } 
+                        if (document.body.matches('#blog')) { 
+                            node.querySelectorAll('.article .title2.top .when').forEach(updateArticleWhenElement); 
+                            node.querySelectorAll('.bt_mini .when').forEach(updateBtMiniWhenElement); 
+                            node.querySelectorAll('.mini_buttons .when').forEach(updateMiniButtonsWhenElement); 
+                        } 
+                        
+                        if (document.body.matches('#group, #members') && node.matches('.big_list .cc')) { 
+                            updateCcElement(node); 
+                        } 
+                        if (document.body.matches('#group, #members')) { 
+                            node.querySelectorAll('.big_list .cc').forEach(updateCcElement); 
+                        }
+                        
+                        if (document.body.matches('#board') && node.matches('.side_topics .when')) {
+                            updateSideTopicsWhenElement(node);
+                        }
+                        if (document.body.matches('#board') && node.matches('.lastarticles .topic .when')) {
+                            updateLastArticlesWhenElement(node);
+                        }
+                        if (document.body.matches('#board')) {
+                            node.querySelectorAll('.side_topics .when').forEach(updateSideTopicsWhenElement);
+                            node.querySelectorAll('.lastarticles .topic .when').forEach(updateLastArticlesWhenElement);
+                        }
+                        
+                        // Handle emoji time elements in new nodes
+                        if (node.matches('.st-emoji-epost-time, .st-emoji-notice-time')) {
+                            updateEmojiTimeElement(node);
+                        }
+                        node.querySelectorAll('.st-emoji-epost-time, .st-emoji-notice-time').forEach(updateEmojiTimeElement);
+                        
+                        var selectors = [ 
+                            '.big_list .zz .when', 
+                            '.post-date', 
+                            '.time', 
+                            '.date', 
+                            '.post .title2.top .when', 
+                            '.summary .when' 
+                        ]; 
+                        
+                        for (var i = 0; i < selectors.length; i++) { 
+                            var selector = selectors[i]; 
+                            if (node.matches(selector)) { 
+                                updateTimeElement(node, selector); 
+                            } 
+                            node.querySelectorAll(selector).forEach(function(element) { 
+                                updateTimeElement(element, selector); 
+                            }); 
+                        } 
+                    } 
+                }); 
             });
         } catch (e) {
-            console.error('Mutation observer error:', e);
             return;
         }
     }); 
@@ -689,10 +665,9 @@ document.addEventListener("DOMContentLoaded", function() {
     try {
         timestampObserver.observe(document.body, { 
             childList: true, 
-            subtree: true,
-            characterData: true  // Watch for text changes too
+            subtree: true 
         });
     } catch (e) {
-        console.error('Observer initialization error:', e);
+        return;
     }
 });
