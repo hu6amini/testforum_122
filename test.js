@@ -1,668 +1,399 @@
-document.addEventListener("DOMContentLoaded", function() { 
- // Get user's timezone once 
- const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; 
- const isGuest = document.body.classList.contains('guest'); 
- 
- function parseDate(dateString) { 
- // Clean the string (remove seconds if present) 
- var cleanString = String(dateString).replace(/:(\d{2})$/, '').trim(); 
- 
- // If guest, first try to parse as Italian time and convert to local 
- if (isGuest) { 
- // Try common Italian formats 
- var italianFormats = [ 
- 'D/M/YYYY, HH:mm', 
- 'D MMM YYYY, HH:mm', 
- 'D MMMM YYYY, HH:mm', 
- 'YYYY/MM/DD HH:mm' 
- ]; 
- 
- for (var k = 0; k < italianFormats.length; k++) { 
- var localTime = convertItalianTimeToLocal(cleanString, italianFormats[k]); 
- if (localTime && localTime.isValid()) { 
- return localTime; 
- } 
- } 
- } 
- 
- // Determine format based on AM/PM 
- var isUSFormat = /AM|PM/i.test(cleanString); 
- 
- // Priority 1: Try the detected format (US or EU) with more specific formats 
- var formats = isUSFormat 
- ? ['M/D/YYYY, h:mm A', 'M/D/YYYY', 'MMM D, YYYY, h:mm A', 'MMMM D, YYYY, h:mm A'] // US formats 
- : ['D/M/YYYY, HH:mm', 'D/M/YYYY', 'D MMM YYYY, HH:mm', 'D MMMM YYYY, HH:mm']; // EU formats 
- 
- for (var i = 0; i < formats.length; i++) { 
- var date = moment(cleanString, formats[i], true); // Strict mode 
- if (date.isValid()) return date; 
- } 
- 
- // Priority 2: Fallback to ISO 8601 (e.g., "2025-05-02T00:13:00Z") 
- if (moment(cleanString, moment.ISO_8601, true).isValid()) { 
- return moment(cleanString, moment.ISO_8601, true); 
- } 
- 
- // Priority 3: Try common alternative formats before falling back 
- var fallbackFormats = [ 
- 'YYYY-MM-DD HH:mm', 
- 'YYYY/MM/DD HH:mm', 
- 'MMMM D, YYYY', 
- 'MMM D, YYYY', 
- 'YYYY MMMM D', 
- 'YYYY MMM D' 
- ]; 
- 
- for (var j = 0; j < fallbackFormats.length; j++) { 
- var fallbackDate = moment(cleanString, fallbackFormats[j], true); 
- if (fallbackDate.isValid()) return fallbackDate; 
- } 
- 
- // Last resort 
- return moment(cleanString); 
- } 
- 
- function formatDate(date) { 
- if (!date || !date.isValid()) return 'Invalid date'; 
- 
- var now = moment(); 
- var diff = now.diff(date, 'hours'); 
- 
- if (diff < 24) { 
- return date.fromNow(); 
- } else if (diff < 48) { 
- return 'Yesterday at ' + date.format('h:mm A'); 
- } else if (diff < 168) { 
- return date.format('dddd [at] h:mm A'); 
- } else { 
- return date.format('MMM D, YYYY'); 
- } 
- } 
- 
- function formatMonthYear(date) { 
- if (!date || !date.isValid()) return 'Invalid date'; 
- return date.format('MMM, YYYY'); 
- } 
- 
- function convertItalianTimeToLocal(dateString, format) { 
- try { 
- // Parse with moment using Europe/Rome timezone 
- var italianTime = moment.tz(dateString, format, "Europe/Rome"); 
- if (!italianTime.isValid()) { 
- return null; 
- } 
- 
- // Convert to user's local time 
- return italianTime.clone().tz(userTimeZone); 
- } catch (e) { 
- return null; 
- } 
- } 
- 
- function isGlitchedDateElement(element) { 
- try { 
- if (!element) return false; 
- 
- // Check if element matches the glitched structure 
- const daySpan = element.querySelector('.d_day'); 
- const monthSpan = element.querySelector('.d_month'); 
- const yearSpan = element.querySelector('.d_year'); 
- 
- return daySpan && monthSpan && yearSpan && 
- monthSpan.textContent.trim() === '' && 
- yearSpan.textContent.trim() !== '' && 
- !element.textContent.includes(':'); 
- } catch (e) { 
- return false; 
- } 
- } 
- 
- function handleGlitchedDate(element) { 
- try { 
- const daySpan = element.querySelector('.d_day'); 
- const yearSpan = element.querySelector('.d_year'); 
- 
- if (!daySpan || !yearSpan) return null; 
- 
- // The "day" span actually contains the month number 
- const monthNumber = parseInt(daySpan.textContent.trim()); 
- const year = yearSpan.textContent.trim(); 
- 
- if (isNaN(monthNumber) || !year) return null; 
- 
- // Create date from month and year only 
- const date = moment({year: year, month: monthNumber - 1}); 
- return date.isValid() ? date : null; 
- } catch (e) { 
- return null; 
- } 
- } 
- 
- function updateTimeagoElement(element) { 
- try { 
- var dateString = element.getAttribute('datetime') || 
- element.getAttribute('title') || 
- element.textContent.trim(); 
- 
- var date = parseDate(dateString); 
- if (date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateEditElement(element) { 
- try { 
- var text = element.textContent.trim(); 
- var match = text.match(/^(Edited by .+?) - (.+)$/); 
- 
- if (match) { 
- var prefix = match[1]; 
- var dateString = match[2]; 
- 
- var date = parseDate(dateString); 
- if (date.isValid()) { 
- var formattedDate = date.format('MMM D, YYYY'); 
- element.textContent = prefix + ': ' + formattedDate; 
- 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formattedDate; 
- timeElement.style.visibility = 'visible'; 
- 
- element.innerHTML = prefix + ': '; 
- element.appendChild(timeElement); 
- } 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateProfileDate(dlElement) { 
- try { 
- var whenElement = dlElement.querySelector('.when'); 
- if (!whenElement) return; 
- 
- var dateString = whenElement.textContent.trim(); 
- var date = parseDate(dateString); 
- if (!date.isValid()) return; 
- 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = date.format('MMM D, YYYY'); 
- timeElement.style.visibility = 'visible'; 
- 
- whenElement.replaceWith(timeElement); 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateOnlineWhenElement(element) { 
- try { 
- if (!document.body.matches('#online')) return; 
- 
- var rawText = element.textContent.trim(); 
- var date = parseDate(rawText); 
- 
- if (date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('when'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateArticleWhenElement(element) { 
- try { 
- if (!document.body.matches('#blog')) return; 
- 
- // Check for glitched date format first 
- if (isGlitchedDateElement(element)) { 
- var date = handleGlitchedDate(element); 
- if (date && date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('when'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM, YYYY')); 
- timeElement.textContent = formatMonthYear(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- return; 
- } 
- } 
- 
- // Normal processing for non-glitched dates 
- var day = element.querySelector('.d_day') ? element.querySelector('.d_day').textContent.trim() : ''; 
- var month = element.querySelector('.d_month') ? element.querySelector('.d_month').textContent.trim() : ''; 
- var year = element.querySelector('.d_year') ? element.querySelector('.d_year').textContent.trim() : ''; 
- 
- // Clean month (remove duplicate parts like "June" becoming "Jun") 
- month = month.replace(/([A-Za-z]+).*/, '$1'); 
- 
- // Construct date string in ISO-like format to avoid parsing issues 
- var dateString = year + '-' + month + '-' + day; 
- 
- // Try parsing with explicit format first 
- var date = moment(dateString, 'YYYY-MMM-DD', true); 
- if (!date.isValid()) { 
- date = parseDate(dateString); 
- } 
- 
- if (date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('when'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateBtMiniWhenElement(element) { 
- try { 
- // Check for glitched date format first 
- if (isGlitchedDateElement(element)) { 
- var date = handleGlitchedDate(element); 
- if (date && date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('when'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM, YYYY')); 
- timeElement.textContent = formatMonthYear(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- return; 
- } 
- } 
- 
- // Normal processing for non-glitched dates 
- var day = element.querySelector('.d_day') ? element.querySelector('.d_day').textContent.trim() : ''; 
- var month = element.querySelector('.d_month') ? element.querySelector('.d_month').textContent.trim() : ''; 
- var year = element.querySelector('.d_year') ? element.querySelector('.d_year').textContent.trim() : ''; 
- 
- // Clean month (remove duplicate parts like "June" becoming "Jun") 
- month = month.replace(/([A-Za-z]+).*/, '$1'); 
- 
- // Construct date string in ISO-like format 
- var dateString = year + '-' + month + '-' + day; 
- 
- // Try parsing with explicit format first 
- var date = moment(dateString, 'YYYY-MMM-DD', true); 
- if (!date.isValid()) { 
- date = parseDate(dateString); 
- } 
- 
- if (date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('when'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateCcElement(element) { 
- try { 
- if (!document.body.matches('#group, #members')) return; 
- 
- var dateString = element.textContent.trim(); 
- var date = parseDate(dateString); 
- if (date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('cc'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY')); 
- timeElement.textContent = date.format('MMM D, YYYY'); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateMiniButtonsWhenElement(element) { 
- try { 
- if (!document.body.matches('#blog')) return; 
- 
- var dateString = element.getAttribute('title') || element.textContent.trim(); 
- // Handle the case where title might include seconds (e.g., "5/6/2025, 04:45 PM:21") 
- dateString = dateString.split(':').slice(0, -1).join(':').trim(); 
- 
- var date = parseDate(dateString); 
- if (date.isValid()) { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- timeElement.classList.add('when'); 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateSideTopicsWhenElement(element) { 
- try { 
- if (!document.body.matches('#board')) return; 
- 
- // Get the last text node content (after any spans) 
- var textNode = element.lastChild; 
- if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return; 
- 
- var rawTime = textNode.textContent.trim(); 
- 
- // Convert from Italian time to local time 
- var localTime = convertItalianTimeToLocal(rawTime, "D/M/YYYY, HH:mm"); 
- if (!localTime) return; 
- 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt when'; 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', localTime.format()); 
- timeElement.setAttribute('title', localTime.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(localTime); 
- timeElement.style.visibility = 'visible'; 
- 
- element.replaceWith(timeElement); 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateLastArticlesWhenElement(element) { 
- try { 
- if (!document.body.matches('#board')) return; 
- 
- // Get the last text node content (after any spans) 
- var textNode = element.lastChild; 
- if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return; 
- 
- var rawTime = textNode.textContent.trim(); 
- 
- // Convert from Italian time to local time 
- var localTime = convertItalianTimeToLocal(rawTime, "D/M/YYYY, HH:mm"); 
- if (!localTime) return; 
- 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt when'; 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', localTime.format()); 
- timeElement.setAttribute('title', localTime.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(localTime); 
- timeElement.style.visibility = 'visible'; 
- 
- element.replaceWith(timeElement); 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateEmojiTimeElement(element) { 
- try { 
- var dateString = element.getAttribute('datetime') || element.textContent.trim(); 
- 
- // Convert from Italian time to local time (format: "2025/05/16 18:32") 
- var localTime = convertItalianTimeToLocal(dateString, "YYYY/MM/DD HH:mm"); 
- if (!localTime) return; 
- 
- element.textContent = formatDate(localTime); 
- element.setAttribute('datetime', localTime.format()); 
- element.setAttribute('title', localTime.format('MMM D, YYYY [at] h:mm A')); 
- element.style.visibility = 'visible'; 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function updateTimeElement(element, selector) { 
- try { 
- if (element.closest('.edit')) return; 
- if (element.classList.contains('timeago')) return; 
- 
- if (selector === '.big_list .zz .when' && 
- !document.body.matches('#board, #forum, #blog, #search')) { 
- return; 
- } 
- if (selector === '.post .title2.top .when' && 
- !document.body.matches('#topic, #search, #blog')) { 
- return; 
- } 
- if (selector === '.summary .when' && 
- !document.body.matches('#send')) { 
- return; 
- } 
- if (selector === '.article .title2.top .when' && 
- !document.body.matches('#blog')) { 
- return; 
- } 
- 
- var rawText = element.getAttribute('title') || element.textContent.trim(); 
- 
- if (element.children.length && element.children[0].tagName === 'SPAN') { 
- rawText = element.childNodes[element.childNodes.length - 1].textContent.trim(); 
- } 
- 
- var date = parseDate(rawText); 
- if (date.isValid()) { 
- if (element.classList.contains('st-emoji-notice-time') || element.classList.contains('st-emoji-epost-time')) { 
- updateEmojiTimeElement(element); 
- } else { 
- var timeElement = document.createElement('time'); 
- timeElement.className = 'u-dt'; 
- if (element.classList.contains('when')) { 
- timeElement.classList.add('when'); 
- } 
- if (element.classList.contains('Item')) { 
- timeElement.classList.add('Item'); 
- } 
- timeElement.setAttribute('dir', 'auto'); 
- timeElement.setAttribute('datetime', date.format()); 
- timeElement.setAttribute('title', date.format('MMM D, YYYY [at] h:mm A')); 
- timeElement.textContent = formatDate(date); 
- timeElement.style.visibility = 'visible'; 
- element.replaceWith(timeElement); 
- } 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- function processTimeElements() { 
- try { 
- document.querySelectorAll('dl.profile-joined, dl.profile-lastaction').forEach(updateProfileDate); 
- document.querySelectorAll('.timeago').forEach(updateTimeagoElement); 
- document.querySelectorAll('.post .edit').forEach(updateEditElement); 
- 
- if (document.body.matches('#online')) { 
- document.querySelectorAll('.online .yy .when').forEach(updateOnlineWhenElement); 
- } 
- 
- if (document.body.matches('#blog')) { 
- document.querySelectorAll('.article .title2.top .when').forEach(updateArticleWhenElement); 
- document.querySelectorAll('.bt_mini .when').forEach(updateBtMiniWhenElement); 
- document.querySelectorAll('.mini_buttons .when').forEach(updateMiniButtonsWhenElement); 
- } 
- 
- if (document.body.matches('#group, #members')) { 
- document.querySelectorAll('.big_list .cc').forEach(updateCcElement); 
- } 
- 
- if (document.body.matches('#board')) { 
- document.querySelectorAll('.side_topics .when').forEach(updateSideTopicsWhenElement); 
- document.querySelectorAll('.lastarticles .topic .when').forEach(updateLastArticlesWhenElement); 
- } 
- 
- // Handle emoji time elements everywhere 
- document.querySelectorAll('.st-emoji-epost-time, .st-emoji-notice-time').forEach(updateEmojiTimeElement); 
- 
- var selectors = [ 
- '.big_list .zz .when', 
- '.post-date', 
- '.time', 
- '.date', 
- '.post .title2.top .when', 
- '.summary .when' 
- ]; 
- 
- for (var i = 0; i < selectors.length; i++) { 
- var selector = selectors[i]; 
- document.querySelectorAll(selector).forEach(function(element) { 
- updateTimeElement(element, selector); 
- }); 
- } 
- } catch (e) { 
- return; 
- } 
- } 
- 
- processTimeElements(); 
- 
- var timestampObserver = new MutationObserver(function(mutations) { 
- try { 
- mutations.forEach(function(mutation) { 
- mutation.addedNodes.forEach(function(node) { 
- if (node.nodeType === 1) { 
- if (node.matches('dl.profile-joined, dl.profile-lastaction')) { 
- updateProfileDate(node); 
- } 
- node.querySelectorAll('dl.profile-joined, dl.profile-lastaction').forEach(updateProfileDate); 
- 
- if (node.matches('.timeago')) { 
- updateTimeagoElement(node); 
- } 
- node.querySelectorAll('.timeago').forEach(updateTimeagoElement); 
- 
- if (node.matches('.post .edit')) { 
- updateEditElement(node); 
- } 
- node.querySelectorAll('.post .edit').forEach(updateEditElement); 
- 
- if (document.body.matches('#online') && node.matches('.online .yy .when')) { 
- updateOnlineWhenElement(node); 
- } 
- if (document.body.matches('#online')) { 
- node.querySelectorAll('.online .yy .when').forEach(updateOnlineWhenElement); 
- } 
- 
- if (document.body.matches('#blog') && node.matches('.article .title2.top .when')) { 
- updateArticleWhenElement(node); 
- } 
- if (document.body.matches('#blog') && node.matches('.bt_mini .when')) { 
- updateBtMiniWhenElement(node); 
- } 
- if (document.body.matches('#blog') && node.matches('.mini_buttons .when')) { 
- updateMiniButtonsWhenElement(node); 
- } 
- if (document.body.matches('#blog')) { 
- node.querySelectorAll('.article .title2.top .when').forEach(updateArticleWhenElement); 
- node.querySelectorAll('.bt_mini .when').forEach(updateBtMiniWhenElement); 
- node.querySelectorAll('.mini_buttons .when').forEach(updateMiniButtonsWhenElement); 
- } 
- 
- if (document.body.matches('#group, #members') && node.matches('.big_list .cc')) { 
- updateCcElement(node); 
- } 
- if (document.body.matches('#group, #members')) { 
- node.querySelectorAll('.big_list .cc').forEach(updateCcElement); 
- } 
- 
- if (document.body.matches('#board') && node.matches('.side_topics .when')) { 
- updateSideTopicsWhenElement(node); 
- } 
- if (document.body.matches('#board') && node.matches('.lastarticles .topic .when')) { 
- updateLastArticlesWhenElement(node); 
- } 
- if (document.body.matches('#board')) { 
- node.querySelectorAll('.side_topics .when').forEach(updateSideTopicsWhenElement); 
- node.querySelectorAll('.lastarticles .topic .when').forEach(updateLastArticlesWhenElement); 
- } 
- 
- // Handle emoji time elements in new nodes 
- if (node.matches('.st-emoji-epost-time, .st-emoji-notice-time')) { 
- updateEmojiTimeElement(node); 
- } 
- node.querySelectorAll('.st-emoji-epost-time, .st-emoji-notice-time').forEach(updateEmojiTimeElement); 
- 
- var selectors = [ 
- '.big_list .zz .when', 
- '.post-date', 
- '.time', 
- '.date', 
- '.post .title2.top .when', 
- '.summary .when' 
- ]; 
- 
- for (var i = 0; i < selectors.length; i++) { 
- var selector = selectors[i]; 
- if (node.matches(selector)) { 
- updateTimeElement(node, selector); 
- } 
- node.querySelectorAll(selector).forEach(function(element) { 
- updateTimeElement(element, selector); 
- }); 
- } 
- } 
- }); 
- }); 
- } catch (e) { 
- return; 
- } 
- }); 
- 
- try { 
- timestampObserver.observe(document.body, { 
- childList: true, 
- subtree: true 
- }); 
- } catch (e) { 
- return; 
- } 
+function createMobileMenu() { 
+    // Check if we're on mobile and menu hasn't been transformed yet 
+    if (!document.body.classList.contains('mobile') || document.querySelector('.mobile-menu-toggle')) { 
+        return; 
+    } 
+    
+    const menuWrap = document.querySelector('.menuwrap'); 
+    const leftMenu = menuWrap.querySelector('.left'); 
+    
+    // Find elements to exclude from sidebar 
+    const elementsToExclude = []; 
+    const notificationsLink = leftMenu.querySelector('a[href="#notifications"]'); 
+    const emojiLink = leftMenu.querySelector('.st-emoji-link-void'); 
+    
+    if (notificationsLink) { 
+        elementsToExclude.push(notificationsLink.closest('li')); 
+    } 
+    if (emojiLink) { 
+        elementsToExclude.push(emojiLink.closest('li')); 
+    } 
+    
+    // Find members link from right menu 
+    const rightMenu = menuWrap.querySelector('.right'); 
+    const membersLink = rightMenu ? rightMenu.querySelector('a[href="/?act=Members"]') : null; 
+    let membersLi = null; 
+    if (membersLink) { 
+        membersLi = membersLink.closest('li'); 
+    } 
+    
+    // Create mobile menu structure using string concatenation 
+    var mobileMenuHTML = '' + 
+        '<div class="mobile-menu-container">' + 
+        '<button class="mobile-menu-toggle" type="button">' + 
+        '<i class="fa-regular fa-bars"></i>' + 
+        '</button>' + 
+        '<div class="mobile-sidebar-overlay"></div>' + 
+        '<div class="mobile-sidebar">' + 
+        '<div class="mobile-sidebar-header">' + 
+        '<button class="mobile-sidebar-close" type="button">' + 
+        '<i class="fa-regular fa-times"></i>' + 
+        '</button>' + 
+        '<h3>Menu</h3>' + 
+        '</div>' + 
+        '<div class="mobile-sidebar-content">' + 
+        '<!-- Content will be populated dynamically -->' + 
+        '</div>' + 
+        '</div>' + 
+        '</div>'; 
+    
+    // Insert mobile menu container before the left menu 
+    leftMenu.insertAdjacentHTML('beforebegin', mobileMenuHTML); 
+    
+    // Hide the original left menu (but keep it in DOM) 
+    leftMenu.style.display = 'none'; 
+    
+    // Remove right menu 
+    if (rightMenu) { 
+        rightMenu.remove(); 
+    } 
+    
+    // Get references to the new mobile menu elements 
+    const sidebar = document.querySelector('.mobile-sidebar'); 
+    const sidebarContent = document.querySelector('.mobile-sidebar-content'); 
+    const overlay = document.querySelector('.mobile-sidebar-overlay'); 
+    const toggleBtn = document.querySelector('.mobile-menu-toggle'); 
+    const closeBtn = document.querySelector('.mobile-sidebar-close'); 
+    const mobileMenuContainer = document.querySelector('.mobile-menu-container'); 
+    
+    // Track sidebar state 
+    let isSidebarOpen = false; 
+    
+    // Function to organize menu items into categories 
+    function organizeMenuItems() { 
+        const categories = []; 
+    
+        // Process all list items from the original left menu 
+        const listItems = leftMenu.querySelectorAll('li'); 
+        listItems.forEach(li => { 
+            // Skip excluded elements 
+            if (elementsToExclude.some(excludeItem => excludeItem === li)) { 
+                return; 
+            } 
+    
+            const clonedLi = li.cloneNode(true); 
+            const link = clonedLi.querySelector('a'); 
+            const submenu = clonedLi.querySelector('ul'); 
+    
+            // Check if this is the user profile menu (contains avatar and nick) 
+            const isUserProfileMenu = link && link.querySelector('.avatar') && link.querySelector('.nick'); 
+    
+            if (isUserProfileMenu) { 
+                // User profile menu - create special category 
+                const menuText = link.querySelector('.nick') ? link.querySelector('.nick').textContent.trim() : 'Profile'; 
+    
+                categories.unshift({ 
+                    title: menuText, 
+                    items: Array.from(submenu.querySelectorAll('li')).map(subLi => ({ 
+                        type: 'link', 
+                        html: subLi.outerHTML, 
+                        originalElement: subLi 
+                    })), 
+                    isSubmenu: true, 
+                    isUserProfile: true 
+                }); 
+            } else if (submenu && !isUserProfileMenu) { 
+                // Menu with submenu - treat as category (but not user profile) 
+                const menuText = link ? link.textContent.trim() : 'Menu'; 
+    
+                // Check if this is a submenu with alternative class 
+                const isAlternativeSubmenu = li.classList.contains('submenu') && li.classList.contains('alternative'); 
+    
+                categories.push({ 
+                    title: menuText, 
+                    items: Array.from(submenu.querySelectorAll('li')).map(subLi => ({ 
+                        type: 'link', 
+                        html: subLi.outerHTML, 
+                        originalElement: subLi 
+                    })), 
+                    isSubmenu: true, 
+                    isAlternative: isAlternativeSubmenu 
+                }); 
+            } 
+            // NOTE: We're intentionally skipping regular menu items without submenus 
+            // They shouldn't appear in the sidebar at all 
+        }); 
+    
+        // Add members link if found 
+        if (membersLi) { 
+            const clonedMembersLi = membersLi.cloneNode(true); 
+            categories.push({ 
+                title: 'Community', 
+                items: [{ 
+                    type: 'link', 
+                    html: clonedMembersLi.outerHTML, 
+                    originalElement: membersLi 
+                }] 
+            }); 
+        } 
+    
+        return categories; 
+    } 
+    
+    // Function to update sidebar with new content 
+    function updateSidebarContent() { 
+        // Clear existing sidebar content 
+        sidebarContent.innerHTML = ''; 
+    
+        const categories = organizeMenuItems(); 
+    
+        categories.forEach(category => { 
+            const categorySection = document.createElement('div'); 
+            categorySection.className = 'mobile-menu-category'; 
+    
+            const categoryTitle = document.createElement('div'); 
+            categoryTitle.className = 'mobile-menu-category-title'; 
+    
+            // Add chevron icon for submenus 
+            if (category.isSubmenu) { 
+                categoryTitle.innerHTML = category.title + ' <i class="fa-regular fa-chevron-down mobile-submenu-chevron"></i>'; 
+                categoryTitle.classList.add('mobile-submenu-title'); 
+                categoryTitle.style.cursor = 'pointer'; 
+    
+                // Add click handler for submenu titles 
+                categoryTitle.addEventListener('click', function() { 
+                    const wasActive = categoryList.classList.contains('active'); 
+    
+                    // Close all other submenus 
+                    sidebarContent.querySelectorAll('.mobile-menu-category-list').forEach(list => { 
+                        list.classList.remove('active'); 
+                    }); 
+                    sidebarContent.querySelectorAll('.mobile-submenu-chevron').forEach(chevron => { 
+                        chevron.classList.remove('active'); 
+                    }); 
+    
+                    // Toggle current submenu 
+                    if (!wasActive) { 
+                        categoryList.classList.add('active'); 
+                        this.querySelector('.mobile-submenu-chevron').classList.add('active'); 
+                    } 
+                }); 
+            } else { 
+                categoryTitle.textContent = category.title; 
+            } 
+    
+            categorySection.appendChild(categoryTitle); 
+    
+            const categoryList = document.createElement('ul'); 
+            categoryList.className = 'mobile-menu-category-list'; 
+    
+            // Add alternative class if needed 
+            if (category.isAlternative) { 
+                categoryList.classList.add('mobile-submenu-alternative'); 
+            } 
+    
+            category.items.forEach(item => { 
+                if (item.type === 'link') { 
+                    const tempDiv = document.createElement('div'); 
+                    tempDiv.innerHTML = item.html; 
+                    const listItem = tempDiv.firstElementChild; 
+
+                    // Fix for logout form
+                    const logoutLink = listItem.querySelector('a[onclick*="Logout.submit"]');
+                    if (logoutLink) {
+                        const form = listItem.querySelector('form[name="Logout"]');
+                        if (form) {
+                            // Replace the onclick with direct form submission
+                            logoutLink.onclick = function(e) {
+                                e.preventDefault();
+                                form.submit();
+                                closeSidebar();
+                                return false;
+                            };
+                        }
+                    } else {
+                        // Only add closeSidebar handler for NON-user-profile categories
+                        if (!category.isUserProfile) {
+                            const link = listItem.querySelector('a'); 
+                            if (link) { 
+                                link.addEventListener('click', function() { 
+                                    closeSidebar(); 
+                                }); 
+                            }
+                        }
+                    }
+
+                    categoryList.appendChild(listItem); 
+                } 
+            }); 
+    
+            categorySection.appendChild(categoryList); 
+            sidebarContent.appendChild(categorySection); 
+        }); 
+    
+        // Re-attach event listeners to sidebar links 
+        attachSidebarLinkListeners(); 
+    } 
+    
+    // Function to attach click listeners to sidebar links 
+    function attachSidebarLinkListeners() { 
+        const sidebarLinks = sidebarContent.querySelectorAll('a'); 
+        sidebarLinks.forEach(link => { 
+            // Don't add click handler to submenu titles (they're handled separately) 
+            if (!link.closest('.mobile-submenu-title')) { 
+                // Skip user profile links - they already work normally
+                const isUserProfileLink = link.closest('.mobile-menu-category')?.querySelector('.mobile-menu-category-title')?.textContent?.includes('-JuNioR-');
+                if (!isUserProfileLink) {
+                    // Skip logout links as they're already handled
+                    if (!link.onclick || !link.onclick.toString().includes('Logout.submit')) {
+                        link.addEventListener('click', closeSidebar); 
+                    }
+                } 
+            } 
+        }); 
+    } 
+    
+    // Function to check for new menu items and update sidebar 
+    function checkForNewMenuItems() { 
+        const currentItems = leftMenu.querySelectorAll('li'); 
+        let hasNewItems = false; 
+    
+        // Check if there are new items that aren't in our excluded list 
+        currentItems.forEach(li => { 
+            if (!elementsToExclude.includes(li)) { 
+                // Check if this is a new item by looking for a data attribute 
+                if (!li.hasAttribute('data-sidebar-processed')) { 
+                    hasNewItems = true; 
+                    li.setAttribute('data-sidebar-processed', 'true'); 
+                } 
+            } 
+        }); 
+    
+        if (hasNewItems) { 
+            updateSidebarContent(); 
+        } 
+    } 
+    
+    // Initialize sidebar content 
+    updateSidebarContent(); 
+    
+    // Set up MutationObserver to watch for changes in the left menu 
+    const leftMenuObserver = new MutationObserver(function(mutations) { 
+        let shouldUpdate = false; 
+    
+        mutations.forEach(function(mutation) { 
+            if (mutation.type === 'childList') { 
+                // Check if any nodes were added 
+                mutation.addedNodes.forEach(function(node) { 
+                    if (node.nodeType === 1 && node.matches('li')) { // Element node and li element 
+                        if (!elementsToExclude.includes(node)) { 
+                            shouldUpdate = true; 
+                        } 
+                    } 
+                }); 
+            } 
+        }); 
+    
+        if (shouldUpdate) { 
+            updateSidebarContent(); 
+        } 
+    }); 
+    
+    // Start observing the left menu for changes 
+    leftMenuObserver.observe(leftMenu, { 
+        childList: true, 
+        subtree: true 
+    }); 
+    
+    // Also check periodically for any dynamic changes (fallback) 
+    const dynamicCheckInterval = setInterval(checkForNewMenuItems, 1000); 
+    
+    // Sidebar control functions 
+    function openSidebar() { 
+        sidebar.classList.add('active'); 
+        overlay.classList.add('active'); 
+        document.body.style.overflow = 'hidden'; 
+        isSidebarOpen = true; 
+    
+        // Force a content update when opening sidebar to ensure it's current 
+        setTimeout(updateSidebarContent, 100); 
+    } 
+    
+    function closeSidebar() { 
+        sidebar.classList.remove('active'); 
+        overlay.classList.remove('active'); 
+        document.body.style.overflow = ''; 
+        isSidebarOpen = false; 
+    
+        // Close all submenus when closing sidebar 
+        sidebarContent.querySelectorAll('.mobile-menu-category-list').forEach(list => { 
+            list.classList.remove('active'); 
+        }); 
+        sidebarContent.querySelectorAll('.mobile-submenu-chevron').forEach(chevron => { 
+            chevron.classList.remove('active'); 
+        }); 
+    } 
+    
+    function toggleSidebar() { 
+        if (isSidebarOpen) { 
+            closeSidebar(); 
+        } else { 
+            openSidebar(); 
+        } 
+    } 
+    
+    // Event listener for hamburger button - toggles sidebar 
+    toggleBtn.addEventListener('click', function(e) { 
+        e.stopPropagation(); // Prevent event from bubbling to document 
+        toggleSidebar(); 
+    }); 
+    
+    // Event listener for close button 
+    closeBtn.addEventListener('click', closeSidebar); 
+    
+    // Event listener for overlay - close when clicking outside 
+    overlay.addEventListener('click', closeSidebar); 
+    
+    // Event listener for document - close when clicking outside sidebar 
+    document.addEventListener('click', function(e) { 
+        if (isSidebarOpen && !sidebar.contains(e.target) && !mobileMenuContainer.contains(e.target)) { 
+            closeSidebar(); 
+        } 
+    }); 
+    
+    // Prevent sidebar clicks from closing the sidebar 
+    sidebar.addEventListener('click', function(e) { 
+        e.stopPropagation(); 
+    }); 
+    
+    // Close sidebar when pressing Escape key 
+    document.addEventListener('keydown', function(e) { 
+        if (isSidebarOpen && e.key === 'Escape') { 
+            closeSidebar(); 
+        } 
+    }); 
+    
+    // Clean up when page is unloaded 
+    window.addEventListener('beforeunload', function() { 
+        leftMenuObserver.disconnect(); 
+        clearInterval(dynamicCheckInterval); 
+    }); 
+} 
+
+// Initialize on DOM load 
+document.addEventListener('DOMContentLoaded', function() { 
+    createMobileMenu(); 
+}); 
+
+// Re-run if body class changes (if you have dynamic class changes) 
+const observer = new MutationObserver(function(mutations) { 
+    mutations.forEach(function(mutation) { 
+        if (mutation.attributeName === 'class') { 
+            createMobileMenu(); 
+        } 
+    }); 
+}); 
+
+observer.observe(document.body, { 
+    attributes: true 
 });
