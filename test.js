@@ -72,12 +72,29 @@ function createMobileMenu() {
     // Function to organize menu items into categories 
     function organizeMenuItems() { 
         const categories = []; 
+
+        // Check if user is guest and add login form at the top
+        if (document.body.classList.contains('guest')) {
+            const loginLi = leftMenu.querySelector('li.login');
+            if (loginLi) {
+                const clonedLoginLi = loginLi.cloneNode(true);
+                categories.unshift({
+                    title: 'Sign In / Register',
+                    items: [{
+                        type: 'login',
+                        html: clonedLoginLi.outerHTML,
+                        originalElement: loginLi
+                    }],
+                    isLoginForm: true
+                });
+            }
+        }
     
         // Process all list items from the original left menu 
         const listItems = leftMenu.querySelectorAll('li'); 
         listItems.forEach(li => { 
-            // Skip excluded elements 
-            if (elementsToExclude.some(excludeItem => excludeItem === li)) { 
+            // Skip excluded elements and login form (already processed)
+            if (elementsToExclude.some(excludeItem => excludeItem === li) || li.classList.contains('login')) { 
                 return; 
             } 
     
@@ -150,12 +167,17 @@ function createMobileMenu() {
         categories.forEach(category => { 
             const categorySection = document.createElement('div'); 
             categorySection.className = 'mobile-menu-category'; 
-    
+            
+            // Add special class for login form
+            if (category.isLoginForm) {
+                categorySection.classList.add('mobile-login-form');
+            }
+
             const categoryTitle = document.createElement('div'); 
             categoryTitle.className = 'mobile-menu-category-title'; 
     
-            // Add chevron icon for submenus 
-            if (category.isSubmenu) { 
+            // Add chevron icon for submenus (but not for login form)
+            if (category.isSubmenu && !category.isLoginForm) { 
                 categoryTitle.innerHTML = category.title + ' <i class="fa-regular fa-chevron-down mobile-submenu-chevron"></i>'; 
                 categoryTitle.classList.add('mobile-submenu-title'); 
                 categoryTitle.style.cursor = 'pointer'; 
@@ -180,12 +202,21 @@ function createMobileMenu() {
                 }); 
             } else { 
                 categoryTitle.textContent = category.title; 
+                
+                // Hide title for login form since it's self-explanatory
+                if (category.isLoginForm) {
+                    categoryTitle.style.display = 'none';
+                }
             } 
     
             categorySection.appendChild(categoryTitle); 
     
-            const categoryList = document.createElement('ul'); 
-            categoryList.className = 'mobile-menu-category-list'; 
+            const categoryList = document.createElement('div'); 
+            if (category.isLoginForm) {
+                categoryList.className = 'mobile-login-content';
+            } else {
+                categoryList.className = 'mobile-menu-category-list'; 
+            }
     
             // Add alternative class if needed 
             if (category.isAlternative) { 
@@ -193,7 +224,24 @@ function createMobileMenu() {
             } 
     
             category.items.forEach(item => { 
-                if (item.type === 'link') { 
+                if (item.type === 'login') { 
+                    // Handle login form separately
+                    const tempDiv = document.createElement('div'); 
+                    tempDiv.innerHTML = item.html; 
+                    const loginContent = tempDiv.firstElementChild; 
+                    
+                    // Remove the li wrapper and get the form content directly
+                    const formContent = loginContent.querySelector('form, .login_with');
+                    if (formContent) {
+                        categoryList.appendChild(formContent);
+                    } else {
+                        categoryList.appendChild(loginContent);
+                    }
+                    
+                    // Re-initialize any login form scripts if needed
+                    initializeLoginFormScripts(categoryList);
+                    
+                } else if (item.type === 'link') { 
                     const tempDiv = document.createElement('div'); 
                     tempDiv.innerHTML = item.html; 
                     const listItem = tempDiv.firstElementChild; 
@@ -235,6 +283,39 @@ function createMobileMenu() {
         attachSidebarLinkListeners(); 
     } 
     
+    // Function to initialize login form scripts
+    function initializeLoginFormScripts(loginContainer) {
+        // Re-initialize the reCAPTCHA script for the login form
+        const loginForm = loginContainer.querySelector('form#loginForm');
+        if (loginForm && typeof grecaptcha !== 'undefined') {
+            // The existing script should handle the reCAPTCHA, but we ensure it's bound
+            console.log('Login form initialized in mobile menu');
+        }
+        
+        // Re-initialize social login buttons
+        const socialButtons = loginContainer.querySelectorAll('.login_with button[data-url]');
+        socialButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const service = this.getAttribute('data-service');
+                const url = this.getAttribute('data-url');
+                
+                document.cookie = "social-login=" + service + "; expires=Wed, 1 Jan 2030 00:00:00 GMT; path=/;";
+                document.location.href = url;
+            });
+        });
+        
+        // Re-initialize login dropdown toggle
+        const dropdownToggle = loginContainer.querySelector('.login-dropdown');
+        const dropdown = loginContainer.querySelector('#login-dropdown');
+        if (dropdownToggle && dropdown) {
+            dropdownToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+    }
+    
     // Function to attach click listeners to sidebar links 
     function attachSidebarLinkListeners() { 
         const sidebarLinks = sidebarContent.querySelectorAll('a'); 
@@ -260,7 +341,7 @@ function createMobileMenu() {
     
         // Check if there are new items that aren't in our excluded list 
         currentItems.forEach(li => { 
-            if (!elementsToExclude.includes(li)) { 
+            if (!elementsToExclude.includes(li) && !li.classList.contains('login')) { 
                 // Check if this is a new item by looking for a data attribute 
                 if (!li.hasAttribute('data-sidebar-processed')) { 
                     hasNewItems = true; 
@@ -286,7 +367,7 @@ function createMobileMenu() {
                 // Check if any nodes were added 
                 mutation.addedNodes.forEach(function(node) { 
                     if (node.nodeType === 1 && node.matches('li')) { // Element node and li element 
-                        if (!elementsToExclude.includes(node)) { 
+                        if (!elementsToExclude.includes(node) && !node.classList.contains('login')) { 
                             shouldUpdate = true; 
                         } 
                     } 
