@@ -1,5 +1,4 @@
 (function() {
-  // List of rules for interception
   const rules = [
     {
       test: src => src.includes("cdn.forumfree.net/libs/handlebars/hb.js"),
@@ -27,7 +26,6 @@
     }
   ];
 
-  // Function to apply async/defer
   function applyMode(script, mode) {
     if (mode === "defer") {
       script.defer = true;
@@ -38,19 +36,27 @@
     }
   }
 
-  // Watch DOM for script injections
+  function processScript(script) {
+    if (script && script.src) {
+      for (const rule of rules) {
+        if (rule.test(script.src)) {
+          applyMode(script, rule.mode);
+          console.log(`[Observer] Updated script: ${script.src} → ${rule.mode}`);
+          break;
+        }
+      }
+    }
+  }
+
+  // 🔹 Step 1: scan already-loaded scripts
+  document.querySelectorAll("script[src]").forEach(processScript);
+
+  // 🔹 Step 2: watch for dynamically injected ones
   const observer = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        if (node.tagName === "SCRIPT" && node.src) {
-          for (const rule of rules) {
-            if (rule.test(node.src)) {
-              applyMode(node, rule.mode);
-              // optional: console.log for debugging
-              console.log(`[Observer] Updated script: ${node.src} → ${rule.mode}`);
-              break;
-            }
-          }
+        if (node.tagName === "SCRIPT") {
+          processScript(node);
         }
       }
     }
