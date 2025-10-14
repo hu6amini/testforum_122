@@ -1,43 +1,54 @@
+// timing-checker.js - Run this first to see if interception is possible
 (function() {
     'use strict';
     
-    let interceptedCount = 0;
-    let missedCount = 0;
+    console.log('⏰ Timing Checker started at:', performance.now(), 'ms');
     
-    function interceptResource(element, type) {
-        const url = element.src || element.href;
-        
-        // Check if already too late
-        if ((type === 'script' && element.complete) || 
-            (type === 'css' && element.sheet)) {
-            console.warn(`⏰ Too late for ${type}:`, url);
-            missedCount++;
-            return false;
-        }
-        
-        console.log(`✅ Intercepted ${type}:`, url);
-        interceptedCount++;
-        
-        if (type === 'script') {
-            element.async = true;
-        } else if (type === 'css') {
-            // CSS preload logic
-        }
-        
-        return true;
-    }
+    // Check script loading states
+    const scripts = document.querySelectorAll('script[src]');
+    console.log('📜 Scripts found:', scripts.length);
     
-    function reportResults() {
-        console.log(`📊 Interception Results: ${interceptedCount} successful, ${missedCount} missed`);
-        if (missedCount > 0) {
-            console.warn('💡 Consider moving interceptor earlier in <head>');
-        }
-    }
+    scripts.forEach((script, index) => {
+        const state = {
+            src: script.src,
+            async: script.async,
+            defer: script.defer, 
+            complete: script.complete,
+            readyState: script.readyState,
+            loadingTime: performance.now()
+        };
+        console.log(`Script ${index}:`, state);
+    });
     
-    // Run interception
-    document.querySelectorAll('script[src]').forEach(s => interceptResource(s, 'script'));
-    document.querySelectorAll('link[rel="stylesheet"]').forEach(l => interceptResource(l, 'css'));
+    // Check CSS loading states
+    const cssLinks = document.querySelectorAll('link[rel="stylesheet"]');
+    console.log('🎨 CSS links found:', cssLinks.length);
     
-    // Report after a short delay
-    setTimeout(reportResults, 100);
+    cssLinks.forEach((link, index) => {
+        const state = {
+            href: link.href,
+            id: link.id,
+            sheet: link.sheet, // null if not loaded yet
+            loadingTime: performance.now()
+        };
+        console.log(`CSS ${index}:`, state);
+    });
+    
+    // Monitor new resources for 5 seconds
+    const resources = new Set();
+    const resourceObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach(entry => {
+            if (!resources.has(entry.name)) {
+                resources.add(entry.name);
+                console.log('📥 Resource loaded:', entry.name, 'at', entry.startTime, 'ms');
+            }
+        });
+    });
+    
+    resourceObserver.observe({entryTypes: ['resource']});
+    
+    setTimeout(() => {
+        console.log('🛑 Timing check complete. Resources loaded:', resources.size);
+        resourceObserver.disconnect();
+    }, 5000);
 })();
